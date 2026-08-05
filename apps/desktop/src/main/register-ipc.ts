@@ -32,6 +32,7 @@ import {
 } from '@gtrz/database';
 
 import type { BackupService } from './backup-service';
+import { registerInventoryIpcHandlers } from './register-inventory-ipc';
 
 interface RegisterIpcOptions {
   readonly getDatabase: () => DatabaseContext;
@@ -143,4 +144,6 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     const input = verifyBackupInputSchema.parse(payload);
     return backupRecordSchema.parse(await options.backupService.verify(input.filePath));
   });
+
+  registerInventoryIpcHandlers({ getDatabase: options.getDatabase });
 }

@@ -73,3 +73,65 @@ test('SMK-BKP-001 — cria e verifica backup manual pela interface', async () =>
     await electronApplication.close();
   }
 });
+
+test('SMK-EST-001 — cadastra produto, movimenta saldo e protege custos no Caixa', async () => {
+  const electronApplication = await electron.launch({ args: [applicationPath] });
+
+  try {
+    const window = await electronApplication.firstWindow();
+    await window.waitForLoadState('domcontentloaded');
+    const suffix = String(Date.now());
+    const eventName = `Evento estoque ${suffix}`;
+    const categoryName = `Cervejas ${suffix}`;
+    const productName = `Budweiser ${suffix}`;
+
+    await window.getByRole('link', { name: 'Eventos' }).click();
+    await window.getByPlaceholder('Ex.: La Rumba Neon — Agosto').fill(eventName);
+    await window.getByRole('button', { name: 'Criar evento' }).click();
+    await expect(window.getByText(eventName, { exact: true }).first()).toBeVisible();
+
+    await window.getByRole('link', { name: 'Estoque' }).click();
+    await expect(window.getByRole('heading', { name: 'Estoque' })).toBeVisible();
+
+    await window.getByPlaceholder('Ex.: Cervejas').fill(categoryName);
+    await window.getByRole('button', { name: 'Criar categoria' }).click();
+    await expect(
+      window.locator('.category-chips').getByText(categoryName, { exact: true }),
+    ).toBeVisible();
+
+    const productForm = window.locator('form.product-form');
+    await productForm.getByLabel('Nome', { exact: true }).fill(productName);
+    await productForm.getByRole('combobox').first().selectOption({ label: categoryName });
+    await productForm.getByLabel('Preço de custo', { exact: true }).fill('6.00');
+    await productForm.getByLabel('Preço de venda', { exact: true }).fill('10.00');
+    await productForm.getByLabel('Aviso de estoque baixo', { exact: true }).fill('3');
+    await productForm.getByRole('button', { name: 'Cadastrar produto' }).click();
+
+    let productCard = window.locator('article.inventory-card').filter({ hasText: productName });
+    await expect(productCard).toBeVisible();
+    await expect(productCard.getByText('R$ 4,00')).toBeVisible();
+    await expect(productCard.getByText('40.00%')).toBeVisible();
+
+    await productCard.getByRole('button', { name: 'Movimentar' }).click();
+    await window.getByLabel('Quantidade').fill('6');
+    await window.getByRole('button', { name: 'Registrar movimento' }).click();
+
+    productCard = window.locator('article.inventory-card').filter({ hasText: productName });
+    await expect(productCard.getByText('6 un.')).toBeVisible();
+
+    await window.getByRole('button', { name: 'Usar perfil Caixa' }).click();
+    await expect(window.getByText('Caixa', { exact: true })).toBeVisible();
+    await window.getByRole('link', { name: 'Estoque' }).click();
+    await expect(window.getByRole('heading', { name: 'Estoque' })).toBeVisible();
+
+    productCard = window.locator('article.inventory-card').filter({ hasText: productName });
+    await expect(productCard).toBeVisible();
+    await expect(productCard.getByText('R$ 10,00')).toBeVisible();
+    await expect(productCard.getByText('Lucro bruto')).toHaveCount(0);
+    await expect(productCard.getByText('Custo')).toHaveCount(0);
+    await expect(productCard.getByRole('button', { name: 'Editar' })).toHaveCount(0);
+    await expect(productCard.getByRole('button', { name: 'Movimentar' })).toHaveCount(0);
+  } finally {
+    await electronApplication.close();
+  }
+});

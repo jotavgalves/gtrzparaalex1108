@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+import type { InventoryApi } from './inventory';
+
+export * from './inventory';
+
 export const IPC_CHANNELS = {
   systemGetInfo: 'system:get-info',
   eventsList: 'events:list',
@@ -15,6 +19,11 @@ export const IPC_CHANNELS = {
   backupsCreateManual: 'backups:create-manual',
   backupsImport: 'backups:import',
   backupsVerify: 'backups:verify',
+  inventoryGetState: 'inventory:get-state',
+  inventoryCreateCategory: 'inventory:create-category',
+  inventoryCreateProduct: 'inventory:create-product',
+  inventoryUpdateProduct: 'inventory:update-product',
+  inventoryRecordMovement: 'inventory:record-movement',
 } as const;
 
 export const systemInfoSchema = z.object({
@@ -150,4 +159,5 @@ export interface GtrzDesktopApi {
     importBackup(): Promise<RestoreBackupResult>;
     verify(input: VerifyBackupInput): Promise<BackupRecord>;
   };
+  readonly inventory: InventoryApi;
 }

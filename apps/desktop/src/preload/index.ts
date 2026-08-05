@@ -34,6 +34,8 @@ import {
   type VerifyBackupInput,
 } from '@gtrz/contracts';
 
+import { inventoryApi } from './inventory-api';
+
 const api: GtrzDesktopApi = {
   system: {
     async getInfo(): Promise<SystemInfo> {
@@ -117,6 +119,7 @@ const api: GtrzDesktopApi = {
       return backupRecordSchema.parse(payload);
     },
   },
+  inventory: inventoryApi,
 };
 
 contextBridge.exposeInMainWorld('gtrz', api);
