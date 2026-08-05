@@ -4,17 +4,28 @@ import { NavLink, Outlet } from 'react-router';
 
 import type { SystemInfo } from '@gtrz/contracts';
 
-import { navigationModules, type UserProfile } from '../../shared/navigation/modules';
-
-const activeProfile: UserProfile = 'production';
+import { navigationModules } from '../../shared/navigation/modules';
+import { ProfileSwitcher } from '../../shared/session/ProfileSwitcher';
+import { useSession } from '../../shared/session/session-context';
 
 function navigationClassName({ isActive }: { readonly isActive: boolean }): string {
   return isActive ? 'sidebar-link sidebar-link--active' : 'sidebar-link';
 }
 
+function formatEventDate(timestamp: number): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(timestamp);
+}
+
 export function AppShell(): React.JSX.Element {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
+  const { state: sessionState, loading: sessionLoading, error: sessionError } = useSession();
+  const activeProfile = sessionState?.profile ?? 'production';
+  const activeEvent = sessionState?.activeEvent ?? null;
 
   useEffect(() => {
     let mounted = true;
@@ -40,7 +51,7 @@ export function AppShell(): React.JSX.Element {
 
   const visibleModules = useMemo(
     () => navigationModules.filter((module) => module.profiles.includes(activeProfile)),
-    [],
+    [activeProfile],
   );
 
   return (
@@ -56,8 +67,14 @@ export function AppShell(): React.JSX.Element {
 
         <div className="event-context">
           <span>Evento ativo</span>
-          <strong>Nenhum evento selecionado</strong>
-          <small>A seleção será habilitada no módulo Eventos.</small>
+          <strong>{activeEvent?.name ?? 'Nenhum evento selecionado'}</strong>
+          <small>
+            {activeEvent === null
+              ? activeProfile === 'production'
+                ? 'Selecione um evento no módulo Eventos.'
+                : 'A Produção precisa selecionar um evento.'
+              : `Operação de ${formatEventDate(activeEvent.startsAt)}`}
+          </small>
         </div>
 
         <nav className="sidebar-nav" aria-label="Módulos do sistema">
@@ -84,9 +101,10 @@ export function AppShell(): React.JSX.Element {
             </span>
             <div>
               <span>Perfil atual</span>
-              <strong>Produção</strong>
+              <strong>{activeProfile === 'production' ? 'Produção' : 'Caixa'}</strong>
             </div>
           </div>
+          <ProfileSwitcher />
           <small>v{systemInfo?.version ?? '0.1.0'}</small>
         </div>
       </aside>
@@ -95,7 +113,11 @@ export function AppShell(): React.JSX.Element {
         <header className="topbar">
           <div>
             <strong>Operação local</strong>
-            <span>Dados armazenados exclusivamente neste computador</span>
+            <span>
+              {sessionLoading
+                ? 'Carregando sessão local'
+                : (sessionError ?? 'Dados armazenados exclusivamente neste computador')}
+            </span>
           </div>
 
           <div className="topbar-status" aria-live="polite">

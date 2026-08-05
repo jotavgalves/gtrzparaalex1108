@@ -3,8 +3,9 @@ import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
+const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
+
 test('SMK-INF-002 — abre o GTRZ System com navegação modular', async () => {
-  const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
   const electronApplication = await electron.launch({ args: [applicationPath] });
 
   try {
@@ -22,6 +23,31 @@ test('SMK-INF-002 — abre o GTRZ System com navegação modular', async () => {
     await expect(window.getByRole('link', { name: 'Estoque' })).toBeVisible();
     await expect(window.getByRole('link', { name: 'Mesas e balcão' })).toBeVisible();
     await expect(window.getByText('Banco íntegro')).toBeVisible();
+  } finally {
+    await electronApplication.close();
+  }
+});
+
+test('SMK-USR-001 — Caixa vê somente os módulos permitidos e retorna com senha', async () => {
+  const electronApplication = await electron.launch({ args: [applicationPath] });
+
+  try {
+    const window = await electronApplication.firstWindow();
+    await window.waitForLoadState('domcontentloaded');
+
+    await window.getByRole('button', { name: 'Usar perfil Caixa' }).click();
+    await expect(window.getByText('Caixa', { exact: true })).toBeVisible();
+    await expect(window.getByRole('link', { name: 'Mesas e balcão' })).toBeVisible();
+    await expect(window.getByRole('link', { name: 'Estoque' })).toBeVisible();
+    await expect(window.getByRole('link', { name: 'Ingressos' })).toHaveCount(0);
+    await expect(window.getByRole('link', { name: 'Configurações' })).toHaveCount(0);
+
+    await window.getByPlaceholder('Digite a senha').fill('121225');
+    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
+
+    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
+    await expect(window.getByRole('link', { name: 'Ingressos' })).toBeVisible();
+    await expect(window.getByRole('link', { name: 'Configurações' })).toBeVisible();
   } finally {
     await electronApplication.close();
   }

@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-export type UserProfile = 'production' | 'cashier';
+import type { UserProfile } from '@gtrz/contracts';
 
 interface NavigationModule {
   readonly key: string;

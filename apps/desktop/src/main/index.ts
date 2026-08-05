@@ -1,7 +1,12 @@
 import { app, BrowserWindow, dialog } from 'electron';
 import path from 'node:path';
 
-import { openDatabase, type DatabaseContext, verifyDatabaseIntegrity } from '@gtrz/database';
+import {
+  ensureControlDefaults,
+  openDatabase,
+  type DatabaseContext,
+  verifyDatabaseIntegrity,
+} from '@gtrz/database';
 
 import { createMainWindow } from './create-main-window';
 import { registerIpcHandlers } from './register-ipc';
@@ -30,12 +35,14 @@ if (!hasSingleInstanceLock) {
     try {
       const databasePath = path.join(app.getPath('userData'), 'gtrz-system.sqlite');
       database = openDatabase(databasePath);
+      ensureControlDefaults(database);
 
       if (!verifyDatabaseIntegrity(database)) {
         throw new Error('A verificação de integridade do banco local falhou.');
       }
 
       registerIpcHandlers({
+        database,
         databaseReady: () => database?.sqlite.open ?? false,
       });
 

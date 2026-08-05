@@ -11,6 +11,7 @@ import { SettingsPage } from '../features/settings';
 import { TablesPage } from '../features/tables';
 import { TicketsPage } from '../features/tickets';
 import { VouchersPage } from '../features/vouchers';
+import { RequireProduction } from '../shared/session/RequireProduction';
 import { ErrorPage } from './ErrorPage';
 import { AppShell } from './layouts/AppShell';
 
@@ -20,17 +21,22 @@ export const router = createHashRouter([
     element: <AppShell />,
     errorElement: <ErrorPage />,
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: 'eventos', element: <EventsPage /> },
+      {
+        element: <RequireProduction />,
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: 'eventos', element: <EventsPage /> },
+          { path: 'vouchers', element: <VouchersPage /> },
+          { path: 'caixa', element: <CashPage /> },
+          { path: 'despesas', element: <ExpensesPage /> },
+          { path: 'ingressos', element: <TicketsPage /> },
+          { path: 'auditoria', element: <AuditPage /> },
+          { path: 'backups', element: <BackupsPage /> },
+          { path: 'configuracoes', element: <SettingsPage /> },
+        ],
+      },
       { path: 'estoque', element: <InventoryPage /> },
       { path: 'mesas', element: <TablesPage /> },
-      { path: 'vouchers', element: <VouchersPage /> },
-      { path: 'caixa', element: <CashPage /> },
-      { path: 'despesas', element: <ExpensesPage /> },
-      { path: 'ingressos', element: <TicketsPage /> },
-      { path: 'auditoria', element: <AuditPage /> },
-      { path: 'backups', element: <BackupsPage /> },
-      { path: 'configuracoes', element: <SettingsPage /> },
       { path: '*', element: <Navigate replace to="/" /> },
     ],
   },

@@ -5,6 +5,14 @@ import process from 'node:process';
 const root = process.cwd();
 const sourceRoots = [path.join(root, 'apps', 'desktop', 'src'), path.join(root, 'packages')];
 const codeExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs']);
+const ignoredDirectories = new Set([
+  '.types',
+  'coverage',
+  'dist',
+  'node_modules',
+  'out',
+  'release',
+]);
 const violations = [];
 
 async function walk(directory) {
@@ -14,7 +22,9 @@ async function walk(directory) {
   for (const entry of entries) {
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      files.push(...(await walk(absolute)));
+      if (!ignoredDirectories.has(entry.name)) {
+        files.push(...(await walk(absolute)));
+      }
     } else if (codeExtensions.has(path.extname(entry.name))) {
       files.push(absolute);
     }

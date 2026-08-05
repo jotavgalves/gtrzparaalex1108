@@ -1,7 +1,8 @@
 import BetterSqlite3 from 'better-sqlite3';
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 
 import { technicalSchema } from './schema';
+import type { DatabaseContext } from './types';
 
 interface Migration {
   readonly version: number;
@@ -21,14 +22,42 @@ const migrations: readonly Migration[] = [
       );
     `,
   },
-];
+  {
+    version: 2,
+    name: 'events-profiles-and-audit',
+    sql: `
+      CREATE TABLE events (
+        id TEXT PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('open', 'closed', 'archived')),
+        starts_at INTEGER NOT NULL,
+        ends_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
 
-export interface DatabaseContext {
-  readonly sqlite: BetterSqlite3.Database;
-  readonly orm: BetterSQLite3Database<typeof technicalSchema>;
-  readonly filePath: string;
-  close(): void;
-}
+      CREATE INDEX events_status_starts_at_idx
+        ON events (status, starts_at DESC);
+
+      CREATE TABLE audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        event_id TEXT,
+        profile TEXT NOT NULL CHECK (profile IN ('production', 'cashier')),
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT,
+        details_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT
+      );
+
+      CREATE INDEX audit_log_event_created_at_idx
+        ON audit_log (event_id, created_at DESC);
+      CREATE INDEX audit_log_action_created_at_idx
+        ON audit_log (action, created_at DESC);
+    `,
+  },
+];
 
 function ensureMigrationTable(sqlite: BetterSqlite3.Database): void {
   sqlite.exec(`
@@ -90,3 +119,6 @@ export function verifyDatabaseIntegrity(database: DatabaseContext): boolean {
   const result = database.sqlite.pragma('quick_check', { simple: true });
   return result === 'ok';
 }
+
+export * from './control';
+export type { DatabaseContext } from './types';
