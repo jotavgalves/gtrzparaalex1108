@@ -2,7 +2,7 @@
 
 PDV desktop offline para operação e gestão de eventos da GTRZ.
 
-> Estado atual: **planejamento técnico e funcional**. A implementação ainda não foi iniciada.
+> Estado atual: **implementação da fundação técnica iniciada** na branch `feat/fundacao-tecnica`.
 
 ## Objetivo
 
@@ -19,6 +19,22 @@ Centralizar, em um único aplicativo Windows e sem dependência de internet, a g
 - ingressos;
 - auditoria;
 - backups e configurações.
+
+## Fundação implementada
+
+- workspace modular com aplicativo e pacotes separados;
+- Electron com processos `main`, `preload` e `renderer` isolados;
+- uma única raiz React e um único roteador;
+- onze abas registradas como módulos independentes;
+- SQLite local com versão de esquema e verificação de integridade;
+- contrato IPC tipado e validado com Zod;
+- tema escuro GTRZ com Lucide e Inter incorporados ao bundle;
+- testes unitários, smoke estrutural e smoke E2E do Electron;
+- portões automáticos para TypeScript, lint, formatação, ciclos, código morto e arquitetura;
+- instalador Windows preparado com Electron Builder;
+- recursos de marca reservados para os arquivos oficiais contidos em `LOGOS.zip`.
+
+As telas atuais representam a fundação navegável. Os fluxos comerciais serão implementados por fase, começando por eventos, perfis e configurações básicas.
 
 ## Perfis de acesso
 
@@ -43,6 +59,47 @@ O sistema terá somente dois perfis:
 - Uma única raiz React e um único roteador.
 - Bloqueios automáticos contra dependências circulares, imports indevidos, código morto, implementações duplicadas e sobreposição de código legado.
 
+## Executar localmente
+
+Requisitos:
+
+- Windows 10 ou 11 x64;
+- Node.js 22.13 ou superior;
+- npm 10.9.8 ou compatível.
+
+```bash
+npm install
+npm run dev
+```
+
+Validação completa:
+
+```bash
+npm run quality
+npm run test:e2e
+```
+
+Gerar o instalador:
+
+```bash
+npm run package:win
+```
+
+## Estrutura principal
+
+```text
+apps/desktop/
+├─ src/main/       # janela, ciclo do Electron e banco
+├─ src/preload/    # API mínima exposta ao renderer
+├─ src/renderer/   # interface, rotas e features
+└─ resources/      # identidade visual e instalador
+
+packages/
+├─ contracts/      # contratos IPC validados
+├─ database/       # SQLite, esquema e migrações
+└─ domain/         # regras puras e cálculos
+```
+
 ## Documentação
 
 - [`docs/PLANO_GERAL.md`](docs/PLANO_GERAL.md): escopo funcional consolidado.
@@ -54,20 +111,19 @@ O sistema terá somente dois perfis:
 - [`docs/ROADMAP.md`](docs/ROADMAP.md): fases de implementação e critérios de conclusão.
 - [`docs/DECISOES.md`](docs/DECISOES.md): decisões já confirmadas e pendências futuras.
 
-## Stack planejada
+## Stack
 
-- Electron
-- React
+- Electron 43
+- React 19
 - TypeScript estrito
-- Vite
-- SQLite
-- Drizzle ORM
+- Vite 7 e Electron Vite 5
+- SQLite e Drizzle ORM
 - Zod
 - Lucide React
-- fonte local empacotada
+- Inter Variable local
 - Vitest
 - Playwright
-- ESLint com regras de boundaries
-- verificação de ciclos e código morto
+- ESLint
+- Madge e Knip
 
-A stack poderá ser ajustada somente mediante decisão documentada antes da implementação do módulo afetado.
+A stack somente poderá ser ajustada mediante decisão documentada antes da implementação do módulo afetado.

@@ -1,0 +1,130 @@
+import { Database, Shield, WifiOff } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { NavLink, Outlet } from 'react-router';
+
+import type { SystemInfo } from '@gtrz/contracts';
+
+import { navigationModules, type UserProfile } from '../../shared/navigation/modules';
+
+const activeProfile: UserProfile = 'production';
+
+function navigationClassName({ isActive }: { readonly isActive: boolean }): string {
+  return isActive ? 'sidebar-link sidebar-link--active' : 'sidebar-link';
+}
+
+export function AppShell(): React.JSX.Element {
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
+  const [systemError, setSystemError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    void window.gtrz.system
+      .getInfo()
+      .then((info) => {
+        if (mounted) {
+          setSystemInfo(info);
+        }
+      })
+      .catch((error: unknown) => {
+        if (mounted) {
+          const message = error instanceof Error ? error.message : 'Falha ao consultar o sistema.';
+          setSystemError(message);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const visibleModules = useMemo(
+    () => navigationModules.filter((module) => module.profiles.includes(activeProfile)),
+    [],
+  );
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand-lockup" aria-label="GTRZ System">
+          <span className="brand-lockup__mark">G</span>
+          <div>
+            <strong>GTRZ</strong>
+            <span>System</span>
+          </div>
+        </div>
+
+        <div className="event-context">
+          <span>Evento ativo</span>
+          <strong>Nenhum evento selecionado</strong>
+          <small>A seleção será habilitada no módulo Eventos.</small>
+        </div>
+
+        <nav className="sidebar-nav" aria-label="Módulos do sistema">
+          {visibleModules.map((module) => {
+            const Icon = module.icon;
+            return (
+              <NavLink
+                className={navigationClassName}
+                end={module.path === '/'}
+                key={module.key}
+                to={module.path}
+              >
+                <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                <span>{module.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="profile-card">
+            <span className="profile-card__icon" aria-hidden="true">
+              <Shield size={18} />
+            </span>
+            <div>
+              <span>Perfil atual</span>
+              <strong>Produção</strong>
+            </div>
+          </div>
+          <small>v{systemInfo?.version ?? '0.1.0'}</small>
+        </div>
+      </aside>
+
+      <div className="workspace">
+        <header className="topbar">
+          <div>
+            <strong>Operação local</strong>
+            <span>Dados armazenados exclusivamente neste computador</span>
+          </div>
+
+          <div className="topbar-status" aria-live="polite">
+            <span className="status-pill">
+              <WifiOff size={16} aria-hidden="true" />
+              Offline
+            </span>
+            <span
+              className={
+                systemInfo?.databaseReady === true
+                  ? 'status-pill status-pill--success'
+                  : 'status-pill status-pill--pending'
+              }
+              title={systemError ?? undefined}
+            >
+              <Database size={16} aria-hidden="true" />
+              {systemError !== null
+                ? 'Banco indisponível'
+                : systemInfo?.databaseReady === true
+                  ? 'Banco íntegro'
+                  : 'Verificando banco'}
+            </span>
+          </div>
+        </header>
+
+        <main className="workspace-content">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
