@@ -73,6 +73,43 @@ export const recordStockMovementInputSchema = z.object({
   note: z.string().trim().max(240).optional(),
 });
 
+export const transferStockInputSchema = z
+  .object({
+    productId: z.uuid(),
+    sourceEventId: z.uuid(),
+    destinationEventId: z.uuid(),
+    quantity: z.number().int().positive(),
+    note: z.string().trim().max(240).optional(),
+  })
+  .superRefine((input, context) => {
+    if (input.sourceEventId === input.destinationEventId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Os eventos de origem e destino devem ser diferentes.',
+        path: ['destinationEventId'],
+      });
+    }
+  });
+
+export const stockTransferSchema = z.object({
+  id: z.uuid(),
+  productId: z.uuid(),
+  productName: z.string().min(1),
+  sourceEventId: z.uuid(),
+  sourceEventName: z.string().min(1),
+  destinationEventId: z.uuid(),
+  destinationEventName: z.string().min(1),
+  quantity: z.number().int().positive(),
+  note: z.string().nullable(),
+  sourceQuantityBefore: z.number().int().nonnegative(),
+  sourceQuantityAfter: z.number().int().nonnegative(),
+  destinationQuantityBefore: z.number().int().nonnegative(),
+  destinationQuantityAfter: z.number().int().nonnegative(),
+  createdAt: z.number().int().nonnegative(),
+});
+
+export const stockTransferListSchema = z.array(stockTransferSchema);
+
 export type ProductKind = z.infer<typeof productKindSchema>;
 export type StockMovementType = z.infer<typeof stockMovementTypeSchema>;
 export type ProductCategory = z.infer<typeof productCategorySchema>;
@@ -83,6 +120,8 @@ export type CreateCategoryInput = z.infer<typeof createCategoryInputSchema>;
 export type CreateProductInput = z.infer<typeof createProductInputSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type RecordStockMovementInput = z.infer<typeof recordStockMovementInputSchema>;
+export type TransferStockInput = z.infer<typeof transferStockInputSchema>;
+export type StockTransfer = z.infer<typeof stockTransferSchema>;
 
 export interface InventoryApi {
   getState(): Promise<InventoryState>;
@@ -90,4 +129,6 @@ export interface InventoryApi {
   createProduct(input: CreateProductInput): Promise<InventoryProduct>;
   updateProduct(input: UpdateProductInput): Promise<InventoryProduct>;
   recordMovement(input: RecordStockMovementInput): Promise<InventoryProduct>;
+  listTransfers(): Promise<readonly StockTransfer[]>;
+  transferStock(input: TransferStockInput): Promise<StockTransfer>;
 }

@@ -8,6 +8,7 @@ import { CategoryForm } from './CategoryForm';
 import { ComboSection } from './ComboSection';
 import { ProductCard } from './ProductCard';
 import { ProductForm } from './ProductForm';
+import { StockTransferSection } from './StockTransferSection';
 import { useInventory } from './useInventory';
 
 function formatMoney(cents: number): string {
@@ -37,7 +38,8 @@ export function InventoryPage(): React.JSX.Element {
   const production = sessionState?.profile === 'production';
   const categories = useMemo(() => state?.categories ?? [], [state?.categories]);
   const products = useMemo(() => state?.products ?? [], [state?.products]);
-  const hasActiveEvent = state?.activeEventId !== null && state?.activeEventId !== undefined;
+  const activeEventId = state?.activeEventId ?? null;
+  const hasActiveEvent = activeEventId !== null;
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR');
@@ -213,6 +215,14 @@ export function InventoryPage(): React.JSX.Element {
           />
         ))}
       </div>
+
+      {production ? (
+        <StockTransferSection
+          activeEventId={activeEventId}
+          onTransferred={reload}
+          products={products}
+        />
+      ) : null}
 
       <ComboSection products={products} production={production} />
     </section>

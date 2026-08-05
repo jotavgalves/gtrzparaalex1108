@@ -26,6 +26,8 @@ export const IPC_CHANNELS = {
   inventoryCreateProduct: 'inventory:create-product',
   inventoryUpdateProduct: 'inventory:update-product',
   inventoryRecordMovement: 'inventory:record-movement',
+  inventoryListTransfers: 'inventory:list-transfers',
+  inventoryTransferStock: 'inventory:transfer-stock',
   combosList: 'combos:list',
   combosCreate: 'combos:create',
   combosUpdate: 'combos:update',

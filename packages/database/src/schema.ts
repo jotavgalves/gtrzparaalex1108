@@ -86,6 +86,29 @@ export const stockMovements = sqliteTable('stock_movements', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
+export const stockTransfers = sqliteTable('stock_transfers', {
+  id: text('id').primaryKey(),
+  productId: text('product_id')
+    .notNull()
+    .references(() => products.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+  productName: text('product_name').notNull(),
+  sourceEventId: text('source_event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+  sourceEventName: text('source_event_name').notNull(),
+  destinationEventId: text('destination_event_id')
+    .notNull()
+    .references(() => events.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+  destinationEventName: text('destination_event_name').notNull(),
+  quantity: integer('quantity').notNull(),
+  note: text('note'),
+  sourceQuantityBefore: integer('source_quantity_before').notNull(),
+  sourceQuantityAfter: integer('source_quantity_after').notNull(),
+  destinationQuantityBefore: integer('destination_quantity_before').notNull(),
+  destinationQuantityAfter: integer('destination_quantity_after').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
 export const combos = sqliteTable('combos', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -131,4 +154,5 @@ export const technicalSchema = {
   products,
   schemaMigrations,
   stockMovements,
+  stockTransfers,
 };

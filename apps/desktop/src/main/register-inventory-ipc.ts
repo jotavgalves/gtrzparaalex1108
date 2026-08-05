@@ -8,13 +8,18 @@ import {
   IPC_CHANNELS,
   productCategorySchema,
   recordStockMovementInputSchema,
+  stockTransferListSchema,
+  stockTransferSchema,
+  transferStockInputSchema,
   updateProductInputSchema,
 } from '@gtrz/contracts';
 import {
   createInventoryProduct,
   createProductCategory,
   getInventoryState,
+  listStockTransfers,
   recordStockMovement,
+  transferStockBetweenEvents,
   updateInventoryProduct,
   type DatabaseContext,
 } from '@gtrz/database';
@@ -29,6 +34,8 @@ const INVENTORY_CHANNELS = [
   IPC_CHANNELS.inventoryCreateProduct,
   IPC_CHANNELS.inventoryUpdateProduct,
   IPC_CHANNELS.inventoryRecordMovement,
+  IPC_CHANNELS.inventoryListTransfers,
+  IPC_CHANNELS.inventoryTransferStock,
 ] as const;
 
 export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOptions): void {
@@ -72,5 +79,32 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
           };
 
     return inventoryProductSchema.parse(recordStockMovement(options.getDatabase(), movementInput));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.inventoryListTransfers, () => {
+    return stockTransferListSchema.parse(listStockTransfers(options.getDatabase()));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.inventoryTransferStock, (_event, payload: unknown) => {
+    const input = transferStockInputSchema.parse(payload);
+    const transferInput =
+      input.note === undefined
+        ? {
+            productId: input.productId,
+            sourceEventId: input.sourceEventId,
+            destinationEventId: input.destinationEventId,
+            quantity: input.quantity,
+          }
+        : {
+            productId: input.productId,
+            sourceEventId: input.sourceEventId,
+            destinationEventId: input.destinationEventId,
+            quantity: input.quantity,
+            note: input.note,
+          };
+
+    return stockTransferSchema.parse(
+      transferStockBetweenEvents(options.getDatabase(), transferInput),
+    );
   });
 }

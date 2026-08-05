@@ -8,6 +8,9 @@ import {
   IPC_CHANNELS,
   productCategorySchema,
   recordStockMovementInputSchema,
+  stockTransferListSchema,
+  stockTransferSchema,
+  transferStockInputSchema,
   updateProductInputSchema,
   type CreateCategoryInput,
   type CreateProductInput,
@@ -16,6 +19,8 @@ import {
   type InventoryState,
   type ProductCategory,
   type RecordStockMovementInput,
+  type StockTransfer,
+  type TransferStockInput,
   type UpdateProductInput,
 } from '@gtrz/contracts';
 
@@ -55,5 +60,17 @@ export const inventoryApi: InventoryApi = {
       parsedInput,
     );
     return inventoryProductSchema.parse(payload);
+  },
+  async listTransfers(): Promise<readonly StockTransfer[]> {
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.inventoryListTransfers);
+    return stockTransferListSchema.parse(payload);
+  },
+  async transferStock(input: TransferStockInput): Promise<StockTransfer> {
+    const parsedInput = transferStockInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.inventoryTransferStock,
+      parsedInput,
+    );
+    return stockTransferSchema.parse(payload);
   },
 };

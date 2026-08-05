@@ -157,6 +157,42 @@ const migrations: readonly Migration[] = [
         ON combo_components (product_id);
     `,
   },
+  {
+    version: 5,
+    name: 'stock-transfers-between-events',
+    sql: `
+      CREATE TABLE stock_transfers (
+        id TEXT PRIMARY KEY NOT NULL,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        source_event_id TEXT NOT NULL,
+        source_event_name TEXT NOT NULL,
+        destination_event_id TEXT NOT NULL,
+        destination_event_name TEXT NOT NULL,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        note TEXT,
+        source_quantity_before INTEGER NOT NULL CHECK (source_quantity_before >= 0),
+        source_quantity_after INTEGER NOT NULL CHECK (source_quantity_after >= 0),
+        destination_quantity_before INTEGER NOT NULL CHECK (destination_quantity_before >= 0),
+        destination_quantity_after INTEGER NOT NULL CHECK (destination_quantity_after >= 0),
+        created_at INTEGER NOT NULL,
+        CHECK (source_event_id != destination_event_id),
+        FOREIGN KEY (product_id) REFERENCES products(id)
+          ON UPDATE CASCADE ON DELETE RESTRICT,
+        FOREIGN KEY (source_event_id) REFERENCES events(id)
+          ON UPDATE CASCADE ON DELETE RESTRICT,
+        FOREIGN KEY (destination_event_id) REFERENCES events(id)
+          ON UPDATE CASCADE ON DELETE RESTRICT
+      );
+
+      CREATE INDEX stock_transfers_source_created_idx
+        ON stock_transfers (source_event_id, created_at DESC);
+      CREATE INDEX stock_transfers_destination_created_idx
+        ON stock_transfers (destination_event_id, created_at DESC);
+      CREATE INDEX stock_transfers_product_created_idx
+        ON stock_transfers (product_id, created_at DESC);
+    `,
+  },
 ];
 
 function ensureMigrationTable(sqlite: BetterSqlite3.Database): void {
@@ -225,4 +261,5 @@ export * from './backup';
 export * from './combos';
 export * from './control';
 export * from './inventory';
+export * from './stock-transfers';
 export type { DatabaseContext } from './types';
