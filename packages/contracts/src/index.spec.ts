@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  backupRecordSchema,
+  backupStateSchema,
   createEventInputSchema,
   eventSchema,
+  restoreBackupResultSchema,
   sessionStateSchema,
   switchProfileInputSchema,
   systemInfoSchema,
@@ -64,5 +67,37 @@ describe('control contracts', () => {
     expect(() =>
       switchProfileInputSchema.parse({ targetProfile: 'production', password: 'x'.repeat(129) }),
     ).toThrow();
+  });
+});
+
+describe('backup contracts', () => {
+  const record = {
+    fileName: 'GTRZ-2026-08-05-manual.gtrzbackup',
+    filePath: 'D:/Backups/GTRZ-2026-08-05-manual.gtrzbackup',
+    kind: 'manual',
+    createdAt: 1_786_000_000_000,
+    sizeBytes: 2048,
+    integrity: 'valid',
+  } as const;
+
+  it('aceita pacote íntegro e estado com destino configurado', () => {
+    expect(backupRecordSchema.parse(record)).toEqual(record);
+    expect(backupStateSchema.parse({ destinationPath: 'D:/Backups', backups: [record] })).toEqual({
+      destinationPath: 'D:/Backups',
+      backups: [record],
+    });
+  });
+
+  it('diferencia importação cancelada de restauração concluída', () => {
+    expect(restoreBackupResultSchema.parse({ status: 'cancelled' })).toEqual({
+      status: 'cancelled',
+    });
+    expect(
+      restoreBackupResultSchema.parse({
+        status: 'restored',
+        sourceFileName: record.fileName,
+        restoredAt: record.createdAt,
+      }),
+    ).toMatchObject({ status: 'restored', sourceFileName: record.fileName });
   });
 });

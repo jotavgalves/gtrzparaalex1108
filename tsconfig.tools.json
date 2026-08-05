@@ -9,7 +9,13 @@
     "rootDir": ".",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["vitest.config.ts", "playwright.config.ts", "tests/**/*.ts", "packages/**/*.spec.ts"],
+  "include": [
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "tests/**/*.ts",
+    "packages/**/*.spec.ts",
+    "apps/desktop/src/main/database-runtime.ts"
+  ],
   "references": [
     { "path": "./packages/contracts/tsconfig.json" },
     { "path": "./packages/domain/tsconfig.json" },

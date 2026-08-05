@@ -120,5 +120,7 @@ export function verifyDatabaseIntegrity(database: DatabaseContext): boolean {
   return result === 'ok';
 }
 
+export * from './audit';
+export * from './backup';
 export * from './control';
 export type { DatabaseContext } from './types';

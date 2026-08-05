@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -7,12 +7,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   changeEventStatus,
   changeProductionPassword,
+  createDatabaseSnapshot,
   createEvent,
   ensureControlDefaults,
   getSessionState,
   listEvents,
   openDatabase,
   switchProfile,
+  verifyDatabaseFile,
   verifyDatabaseIntegrity,
   type DatabaseContext,
 } from './index';
@@ -105,6 +107,24 @@ describe('database foundation', () => {
     expect(switchProfile(database, 'production', 'nova-senha-segura')).toMatchObject({
       profile: 'production',
     });
+    database.close();
+  });
+
+  it('gera snapshot consistente e rejeita arquivo SQLite corrompido', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento no snapshot', startsAt: Date.now() });
+    const snapshotPath = path.join(temporaryDirectory ?? '', 'snapshot.sqlite');
+    const invalidPath = path.join(temporaryDirectory ?? '', 'invalid.sqlite');
+
+    await createDatabaseSnapshot(database, snapshotPath);
+    expect(verifyDatabaseFile(snapshotPath)).toBe(true);
+
+    const snapshot = openDatabase(snapshotPath);
+    expect(listEvents(snapshot).map((event) => event.name)).toContain('Evento no snapshot');
+    snapshot.close();
+
+    await writeFile(invalidPath, 'arquivo inválido', 'utf8');
+    expect(verifyDatabaseFile(invalidPath)).toBe(false);
     database.close();
   });
 });

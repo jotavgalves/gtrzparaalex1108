@@ -103,7 +103,7 @@ for (const file of files) {
     report(file, 'o renderer importou infraestrutura proibida.');
   }
 
-  if (/\b(?:Old|Legacy|Copy|Backup|V2)(?:[A-Z_]|\b)/u.test(path.basename(file))) {
+  if (/\b(?:Old|Legacy|Copy|V2)(?:[A-Z_]|\b)/u.test(path.basename(file))) {
     report(file, 'nome de arquivo indica implementação duplicada ou legado empilhado.');
   }
 

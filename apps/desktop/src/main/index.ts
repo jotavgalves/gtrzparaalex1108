@@ -1,20 +1,23 @@
 import { app, BrowserWindow, dialog } from 'electron';
 import path from 'node:path';
 
-import {
-  ensureControlDefaults,
-  openDatabase,
-  type DatabaseContext,
-  verifyDatabaseIntegrity,
-} from '@gtrz/database';
-
+import { BackupService } from './backup-service';
 import { createMainWindow } from './create-main-window';
+import { DatabaseRuntime } from './database-runtime';
 import { registerIpcHandlers } from './register-ipc';
 
 let mainWindow: BrowserWindow | null = null;
-let database: DatabaseContext | null = null;
+let databaseRuntime: DatabaseRuntime | null = null;
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+function requireDatabaseRuntime(): DatabaseRuntime {
+  if (databaseRuntime === null) {
+    throw new Error('O banco local ainda não foi inicializado.');
+  }
+
+  return databaseRuntime;
+}
 
 if (!hasSingleInstanceLock) {
   app.quit();
@@ -33,20 +36,24 @@ if (!hasSingleInstanceLock) {
 
   void app.whenReady().then(() => {
     try {
-      const databasePath = path.join(app.getPath('userData'), 'gtrz-system.sqlite');
-      database = openDatabase(databasePath);
-      ensureControlDefaults(database);
-
-      if (!verifyDatabaseIntegrity(database)) {
-        throw new Error('A verificação de integridade do banco local falhou.');
-      }
+      const userDataPath = app.getPath('userData');
+      const databasePath = path.join(userDataPath, 'gtrz-system.sqlite');
+      databaseRuntime = new DatabaseRuntime(databasePath);
+      const backupService = new BackupService({
+        appVersion: app.getVersion(),
+        defaultDestinationPath: path.join(app.getPath('documents'), 'GTRZ System', 'Backups'),
+        settingsPath: path.join(userDataPath, 'backup-settings.json'),
+        databaseRuntime,
+      });
 
       registerIpcHandlers({
-        database,
-        databaseReady: () => database?.sqlite.open ?? false,
+        getDatabase: () => requireDatabaseRuntime().get(),
+        databaseReady: () => requireDatabaseRuntime().isReady(),
+        backupService,
       });
 
       mainWindow = createMainWindow();
+      void backupService.createBackup('automatic').catch(() => undefined);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : 'Falha desconhecida na inicialização.';
@@ -62,8 +69,8 @@ if (!hasSingleInstanceLock) {
   });
 
   app.on('before-quit', () => {
-    database?.close();
-    database = null;
+    databaseRuntime?.close();
+    databaseRuntime = null;
   });
 
   app.on('window-all-closed', () => {

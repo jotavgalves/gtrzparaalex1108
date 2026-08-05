@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 import {
+  backupRecordSchema,
+  backupStateSchema,
   changeEventStatusInputSchema,
   changeProductionPasswordInputSchema,
   createEventInputSchema,
@@ -9,10 +11,14 @@ import {
   IPC_CHANNELS,
   operationResultSchema,
   renameEventInputSchema,
+  restoreBackupResultSchema,
   sessionStateSchema,
   setActiveEventInputSchema,
   switchProfileInputSchema,
   systemInfoSchema,
+  verifyBackupInputSchema,
+  type BackupRecord,
+  type BackupState,
   type ChangeEventStatusInput,
   type ChangeProductionPasswordInput,
   type CreateEventInput,
@@ -20,10 +26,12 @@ import {
   type GtrzEvent,
   type OperationResult,
   type RenameEventInput,
+  type RestoreBackupResult,
   type SessionState,
   type SetActiveEventInput,
   type SwitchProfileInput,
   type SystemInfo,
+  type VerifyBackupInput,
 } from '@gtrz/contracts';
 
 const api: GtrzDesktopApi = {
@@ -84,6 +92,29 @@ const api: GtrzDesktopApi = {
         parsedInput,
       );
       return operationResultSchema.parse(payload);
+    },
+  },
+  backups: {
+    async getState(): Promise<BackupState> {
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsGetState);
+      return backupStateSchema.parse(payload);
+    },
+    async chooseDestination(): Promise<BackupState> {
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsChooseDestination);
+      return backupStateSchema.parse(payload);
+    },
+    async createManual(): Promise<BackupRecord> {
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsCreateManual);
+      return backupRecordSchema.parse(payload);
+    },
+    async importBackup(): Promise<RestoreBackupResult> {
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsImport);
+      return restoreBackupResultSchema.parse(payload);
+    },
+    async verify(input: VerifyBackupInput): Promise<BackupRecord> {
+      const parsedInput = verifyBackupInputSchema.parse(input);
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsVerify, parsedInput);
+      return backupRecordSchema.parse(payload);
     },
   },
 };

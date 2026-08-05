@@ -10,6 +10,11 @@ export const IPC_CHANNELS = {
   sessionGetState: 'session:get-state',
   sessionSwitchProfile: 'session:switch-profile',
   settingsChangeProductionPassword: 'settings:change-production-password',
+  backupsGetState: 'backups:get-state',
+  backupsChooseDestination: 'backups:choose-destination',
+  backupsCreateManual: 'backups:create-manual',
+  backupsImport: 'backups:import',
+  backupsVerify: 'backups:verify',
 } as const;
 
 export const systemInfoSchema = z.object({
@@ -72,6 +77,36 @@ export const operationResultSchema = z.object({
   success: z.literal(true),
 });
 
+export const backupKindSchema = z.enum(['automatic', 'event-close', 'manual', 'pre-restore']);
+export const backupIntegritySchema = z.enum(['valid', 'invalid']);
+
+export const backupRecordSchema = z.object({
+  fileName: z.string().min(1),
+  filePath: z.string().min(1),
+  kind: backupKindSchema,
+  createdAt: z.number().int().nonnegative(),
+  sizeBytes: z.number().int().nonnegative(),
+  integrity: backupIntegritySchema,
+});
+
+export const backupStateSchema = z.object({
+  destinationPath: z.string().min(1),
+  backups: z.array(backupRecordSchema),
+});
+
+export const verifyBackupInputSchema = z.object({
+  filePath: z.string().min(1),
+});
+
+export const restoreBackupResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('cancelled') }),
+  z.object({
+    status: z.literal('restored'),
+    sourceFileName: z.string().min(1),
+    restoredAt: z.number().int().nonnegative(),
+  }),
+]);
+
 export type SystemInfo = z.infer<typeof systemInfoSchema>;
 export type UserProfile = z.infer<typeof userProfileSchema>;
 export type EventStatus = z.infer<typeof eventStatusSchema>;
@@ -84,6 +119,11 @@ export type SessionState = z.infer<typeof sessionStateSchema>;
 export type SwitchProfileInput = z.infer<typeof switchProfileInputSchema>;
 export type ChangeProductionPasswordInput = z.infer<typeof changeProductionPasswordInputSchema>;
 export type OperationResult = z.infer<typeof operationResultSchema>;
+export type BackupKind = z.infer<typeof backupKindSchema>;
+export type BackupRecord = z.infer<typeof backupRecordSchema>;
+export type BackupState = z.infer<typeof backupStateSchema>;
+export type VerifyBackupInput = z.infer<typeof verifyBackupInputSchema>;
+export type RestoreBackupResult = z.infer<typeof restoreBackupResultSchema>;
 
 export interface GtrzDesktopApi {
   readonly system: {
@@ -102,5 +142,12 @@ export interface GtrzDesktopApi {
   };
   readonly settings: {
     changeProductionPassword(input: ChangeProductionPasswordInput): Promise<OperationResult>;
+  };
+  readonly backups: {
+    getState(): Promise<BackupState>;
+    chooseDestination(): Promise<BackupState>;
+    createManual(): Promise<BackupRecord>;
+    importBackup(): Promise<RestoreBackupResult>;
+    verify(input: VerifyBackupInput): Promise<BackupRecord>;
   };
 }
