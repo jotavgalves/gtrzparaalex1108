@@ -34,6 +34,7 @@ import {
   type VerifyBackupInput,
 } from '@gtrz/contracts';
 
+import { comboApi } from './combo-api';
 import { inventoryApi } from './inventory-api';
 
 const api: GtrzDesktopApi = {
@@ -120,6 +121,7 @@ const api: GtrzDesktopApi = {
     },
   },
   inventory: inventoryApi,
+  combos: comboApi,
 };
 
 contextBridge.exposeInMainWorld('gtrz', api);

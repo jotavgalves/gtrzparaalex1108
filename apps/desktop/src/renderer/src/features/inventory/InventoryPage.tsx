@@ -5,6 +5,7 @@ import type { ProductKind } from '@gtrz/contracts';
 
 import { useSession } from '../../shared/session/session-context';
 import { CategoryForm } from './CategoryForm';
+import { ComboSection } from './ComboSection';
 import { ProductCard } from './ProductCard';
 import { ProductForm } from './ProductForm';
 import { useInventory } from './useInventory';
@@ -212,6 +213,8 @@ export function InventoryPage(): React.JSX.Element {
           />
         ))}
       </div>
+
+      <ComboSection products={products} production={production} />
     </section>
   );
 }

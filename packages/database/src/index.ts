@@ -129,6 +129,34 @@ const migrations: readonly Migration[] = [
         ON stock_movements (product_id, created_at DESC);
     `,
   },
+  {
+    version: 4,
+    name: 'product-combos',
+    sql: `
+      CREATE TABLE combos (
+        id TEXT PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        sale_price_cents INTEGER NOT NULL CHECK (sale_price_cents >= 0),
+        active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE combo_components (
+        combo_id TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        quantity INTEGER NOT NULL CHECK (quantity > 0),
+        PRIMARY KEY (combo_id, product_id),
+        FOREIGN KEY (combo_id) REFERENCES combos(id)
+          ON UPDATE CASCADE ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id)
+          ON UPDATE CASCADE ON DELETE RESTRICT
+      );
+
+      CREATE INDEX combo_components_product_idx
+        ON combo_components (product_id);
+    `,
+  },
 ];
 
 function ensureMigrationTable(sqlite: BetterSqlite3.Database): void {
@@ -194,6 +222,7 @@ export function verifyDatabaseIntegrity(database: DatabaseContext): boolean {
 
 export * from './audit';
 export * from './backup';
+export * from './combos';
 export * from './control';
 export * from './inventory';
 export type { DatabaseContext } from './types';

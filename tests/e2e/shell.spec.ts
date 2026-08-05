@@ -113,8 +113,9 @@ test('SMK-EST-001 — cadastra produto, movimenta saldo e protege custos no Caix
     await expect(productCard.getByText('40.00%')).toBeVisible();
 
     await productCard.getByRole('button', { name: 'Movimentar' }).click();
-    await window.getByLabel('Quantidade').fill('6');
-    await window.getByRole('button', { name: 'Registrar movimento' }).click();
+    const movementForm = window.locator('form.movement-form');
+    await movementForm.getByLabel('Quantidade', { exact: true }).fill('6');
+    await movementForm.getByRole('button', { name: 'Registrar movimento' }).click();
 
     productCard = window.locator('article.inventory-card').filter({ hasText: productName });
     await expect(productCard.getByText('6 un.')).toBeVisible();

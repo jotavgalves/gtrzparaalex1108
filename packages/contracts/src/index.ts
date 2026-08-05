@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+import type { ComboApi } from './combos';
 import type { InventoryApi } from './inventory';
 
+export * from './combos';
 export * from './inventory';
 
 export const IPC_CHANNELS = {
@@ -24,6 +26,9 @@ export const IPC_CHANNELS = {
   inventoryCreateProduct: 'inventory:create-product',
   inventoryUpdateProduct: 'inventory:update-product',
   inventoryRecordMovement: 'inventory:record-movement',
+  combosList: 'combos:list',
+  combosCreate: 'combos:create',
+  combosUpdate: 'combos:update',
 } as const;
 
 export const systemInfoSchema = z.object({
@@ -160,4 +165,5 @@ export interface GtrzDesktopApi {
     verify(input: VerifyBackupInput): Promise<BackupRecord>;
   };
   readonly inventory: InventoryApi;
+  readonly combos: ComboApi;
 }

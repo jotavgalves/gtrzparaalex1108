@@ -86,6 +86,29 @@ export const stockMovements = sqliteTable('stock_movements', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 });
 
+export const combos = sqliteTable('combos', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  salePriceCents: integer('sale_price_cents').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+});
+
+export const comboComponents = sqliteTable(
+  'combo_components',
+  {
+    comboId: text('combo_id')
+      .notNull()
+      .references(() => combos.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    productId: text('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    quantity: integer('quantity').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.comboId, table.productId] })],
+);
+
 export const auditLog = sqliteTable('audit_log', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   eventId: text('event_id'),
@@ -100,6 +123,8 @@ export const auditLog = sqliteTable('audit_log', {
 export const technicalSchema = {
   appMeta,
   auditLog,
+  comboComponents,
+  combos,
   eventStock,
   events,
   productCategories,
