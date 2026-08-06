@@ -20,6 +20,8 @@ interface OperationsViewState {
   readonly openServicePoint: (servicePoint: ServicePoint) => Promise<void>;
   readonly addItem: (item: OperationCatalogItem) => Promise<void>;
   readonly removeItem: (orderItemId: string) => Promise<void>;
+  readonly bindVoucher: (code: string) => Promise<void>;
+  readonly unbindVoucher: () => Promise<void>;
   readonly closeCurrentOrder: (input: Omit<CloseOrderInput, 'orderId'>) => Promise<void>;
   readonly cancelOrder: (orderId: string, reason: string) => Promise<void>;
   readonly clearOrder: () => void;
@@ -135,6 +137,33 @@ export function useOperations(): OperationsViewState {
     [order, run],
   );
 
+  const bindVoucher = useCallback(
+    async (code: string): Promise<void> => {
+      if (order === null) {
+        throw new Error('Abra uma mesa ou o balcão antes de vincular um voucher.');
+      }
+
+      const updated = await run(
+        () => window.gtrz.operations.bindVoucher({ orderId: order.id, code }),
+        'Voucher vinculado à comanda.',
+      );
+      setOrder(updated);
+    },
+    [order, run],
+  );
+
+  const unbindVoucher = useCallback(async (): Promise<void> => {
+    if (!order?.voucherAllocation) {
+      return;
+    }
+
+    const updated = await run(
+      () => window.gtrz.operations.unbindVoucher({ orderId: order.id }),
+      'Voucher removido da comanda.',
+    );
+    setOrder(updated);
+  }, [order, run]);
+
   const closeCurrentOrder = useCallback(
     async (input: Omit<CloseOrderInput, 'orderId'>): Promise<void> => {
       if (order === null) {
@@ -181,6 +210,8 @@ export function useOperations(): OperationsViewState {
     openServicePoint,
     addItem,
     removeItem,
+    bindVoucher,
+    unbindVoucher,
     closeCurrentOrder,
     cancelOrder,
     clearOrder,

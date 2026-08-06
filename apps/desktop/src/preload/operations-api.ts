@@ -2,6 +2,7 @@ import { ipcRenderer } from 'electron';
 
 import {
   addOrderItemInputSchema,
+  bindOrderVoucherInputSchema,
   cancelOrderInputSchema,
   closeOrderInputSchema,
   createServicePointInputSchema,
@@ -12,7 +13,9 @@ import {
   orderSchema,
   removeOrderItemInputSchema,
   servicePointSchema,
+  unbindOrderVoucherInputSchema,
   type AddOrderItemInput,
+  type BindOrderVoucherInput,
   type CancelOrderInput,
   type CloseOrderInput,
   type CreateServicePointInput,
@@ -22,6 +25,7 @@ import {
   type Order,
   type RemoveOrderItemInput,
   type ServicePoint,
+  type UnbindOrderVoucherInput,
 } from '@gtrz/contracts';
 
 export const operationsApi: OperationsApi = {
@@ -64,6 +68,24 @@ export const operationsApi: OperationsApi = {
     const parsedInput = removeOrderItemInputSchema.parse(input);
     const payload: unknown = await ipcRenderer.invoke(
       IPC_CHANNELS.operationsRemoveItem,
+      parsedInput,
+    );
+    return orderSchema.parse(payload);
+  },
+
+  async bindVoucher(input: BindOrderVoucherInput): Promise<Order> {
+    const parsedInput = bindOrderVoucherInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.operationsBindVoucher,
+      parsedInput,
+    );
+    return orderSchema.parse(payload);
+  },
+
+  async unbindVoucher(input: UnbindOrderVoucherInput): Promise<Order> {
+    const parsedInput = unbindOrderVoucherInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.operationsUnbindVoucher,
       parsedInput,
     );
     return orderSchema.parse(payload);

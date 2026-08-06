@@ -11,6 +11,8 @@ interface OrderPanelProps {
   readonly production: boolean;
   readonly onBack: () => void;
   readonly onRemoveItem: (orderItemId: string) => Promise<void>;
+  readonly onBindVoucher: (code: string) => Promise<void>;
+  readonly onUnbindVoucher: () => Promise<void>;
   readonly onCloseOrder: (input: Omit<CloseOrderInput, 'orderId'>) => Promise<void>;
   readonly onCancelOrder: (reason: string) => Promise<void>;
 }
@@ -28,15 +30,23 @@ export function OrderPanel({
   production,
   onBack,
   onRemoveItem,
+  onBindVoucher,
+  onUnbindVoucher,
   onCloseOrder,
   onCancelOrder,
 }: OrderPanelProps): React.JSX.Element {
   return (
     <article className="panel order-panel">
       <div className="order-panel__header">
-        <button className="icon-button" disabled={busy} onClick={onBack} type="button">
+        <button
+          aria-label="Voltar para mesas"
+          className="icon-button order-panel__back"
+          disabled={busy}
+          onClick={onBack}
+          title="Voltar para mesas"
+          type="button"
+        >
           <ArrowLeft size={17} aria-hidden="true" />
-          <span className="sr-only">Voltar para mesas</span>
         </button>
         <div className="panel__heading">
           <ReceiptText size={20} aria-hidden="true" />
@@ -80,7 +90,13 @@ export function OrderPanel({
         <strong>{formatMoney(order.subtotalCents)}</strong>
       </div>
 
-      <CheckoutForm busy={busy} onClose={onCloseOrder} order={order} />
+      <CheckoutForm
+        busy={busy}
+        onBindVoucher={onBindVoucher}
+        onClose={onCloseOrder}
+        onUnbindVoucher={onUnbindVoucher}
+        order={order}
+      />
 
       {production ? (
         <div className="order-cancellation">

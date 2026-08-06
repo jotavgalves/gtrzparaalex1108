@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   addOrderItem,
+  bindOrderVoucher,
   cancelOrder,
   changeVoucherStatus,
   closeOrder,
@@ -111,6 +112,7 @@ describe('vouchers database', () => {
       initialBalanceCents: 700,
     });
     const orderId = openProductOrder(database, productId);
+    bindOrderVoucher(database, { orderId, code: voucher.code });
     const paidOrder = closeOrder(database, {
       orderId,
       discountCents: 0,
@@ -143,6 +145,7 @@ describe('vouchers database', () => {
       initialBalanceCents: 1000,
     });
     const orderId = openProductOrder(database, productId);
+    bindOrderVoucher(database, { orderId, code: voucher.code });
     closeOrder(database, {
       orderId,
       discountCents: 0,
@@ -175,6 +178,7 @@ describe('vouchers database', () => {
       initialBalanceCents: 200,
     });
     const orderId = openProductOrder(database, productId);
+    bindOrderVoucher(database, { orderId, code: voucher.code });
 
     expect(() =>
       closeOrder(database, {
@@ -183,7 +187,7 @@ describe('vouchers database', () => {
         payments: [{ method: 'pix', amountCents: 700 }],
         voucherUses: [{ code: voucher.code, amountCents: 300 }],
       }),
-    ).toThrow('Saldo insuficiente no voucher CURTO-01. Disponível: 200 centavos.');
+    ).toThrow(/Saldo insuficiente no voucher CURTO-01\. Disponível: R\$\s2,00\./u);
     expect(getOrder(database, orderId)).toMatchObject({ status: 'open', paidCents: 0 });
     expect(getStock(database, event.id, productId)).toBe(5);
     expect(getVoucherState(database).vouchers[0]?.remainingBalanceCents).toBe(200);

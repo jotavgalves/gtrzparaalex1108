@@ -5,6 +5,7 @@ import { financeMigration } from './finance-migration';
 import { ticketMigration } from './ticket-migration';
 import { technicalSchema } from './schema';
 import type { DatabaseContext } from './types';
+import { voucherOrderMigration } from './voucher-order-migration';
 
 interface Migration {
   readonly version: number;
@@ -321,6 +322,7 @@ const migrations: readonly Migration[] = [
   },
   financeMigration,
   ticketMigration,
+  voucherOrderMigration,
 ];
 
 function ensureMigrationTable(sqlite: BetterSqlite3.Database): void {

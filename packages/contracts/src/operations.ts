@@ -40,6 +40,16 @@ export const paymentSchema = z.object({
   createdAt: z.number().int().nonnegative(),
 });
 
+export const voucherAllocationSchema = z.object({
+  voucherId: z.uuid(),
+  code: z.string().min(4).max(32),
+  label: z.string().trim().min(2).max(100),
+  remainingBalanceCents: z.number().int().nonnegative(),
+  status: z.enum(['active', 'exhausted', 'cancelled']),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative(),
+});
+
 export const voucherRedemptionSchema = z.object({
   voucherId: z.uuid(),
   code: z.string().min(4).max(32),
@@ -59,6 +69,7 @@ export const orderSchema = z.object({
   remainingCents: z.number().int().nonnegative(),
   items: z.array(orderItemSchema),
   payments: z.array(paymentSchema),
+  voucherAllocation: voucherAllocationSchema.nullable(),
   voucherRedemptions: z.array(voucherRedemptionSchema),
   openedAt: z.number().int().nonnegative(),
   closedAt: z.number().int().nonnegative().nullable(),
@@ -106,6 +117,15 @@ export const removeOrderItemInputSchema = z.object({
   orderItemId: z.uuid(),
 });
 
+export const bindOrderVoucherInputSchema = z.object({
+  orderId: z.uuid(),
+  code: z.string().trim().min(4).max(32),
+});
+
+export const unbindOrderVoucherInputSchema = z.object({
+  orderId: z.uuid(),
+});
+
 export const closeOrderInputSchema = z
   .object({
     orderId: z.uuid(),
@@ -126,6 +146,7 @@ export const closeOrderInputSchema = z
           amountCents: z.number().int().positive(),
         }),
       )
+      .max(1, 'Cada comanda pode utilizar somente um voucher.')
       .default([]),
   })
   .refine((input) => input.payments.length + input.voucherUses.length > 0, {
@@ -145,6 +166,7 @@ export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 export type ServicePoint = z.infer<typeof servicePointSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
 export type Payment = z.infer<typeof paymentSchema>;
+export type VoucherAllocation = z.infer<typeof voucherAllocationSchema>;
 export type VoucherRedemption = z.infer<typeof voucherRedemptionSchema>;
 export type Order = z.infer<typeof orderSchema>;
 export type OperationCatalogItem = z.infer<typeof operationCatalogItemSchema>;
@@ -154,6 +176,8 @@ export type OpenOrderInput = z.infer<typeof openOrderInputSchema>;
 export type GetOrderInput = z.infer<typeof getOrderInputSchema>;
 export type AddOrderItemInput = z.infer<typeof addOrderItemInputSchema>;
 export type RemoveOrderItemInput = z.infer<typeof removeOrderItemInputSchema>;
+export type BindOrderVoucherInput = z.infer<typeof bindOrderVoucherInputSchema>;
+export type UnbindOrderVoucherInput = z.infer<typeof unbindOrderVoucherInputSchema>;
 export type CloseOrderInput = z.infer<typeof closeOrderInputSchema>;
 export type CancelOrderInput = z.infer<typeof cancelOrderInputSchema>;
 
@@ -164,6 +188,8 @@ export interface OperationsApi {
   getOrder(orderId: string): Promise<Order>;
   addItem(input: AddOrderItemInput): Promise<Order>;
   removeItem(input: RemoveOrderItemInput): Promise<Order>;
+  bindVoucher(input: BindOrderVoucherInput): Promise<Order>;
+  unbindVoucher(input: UnbindOrderVoucherInput): Promise<Order>;
   closeOrder(input: CloseOrderInput): Promise<Order>;
   cancelOrder(input: CancelOrderInput): Promise<Order>;
 }

@@ -1,20 +1,13 @@
-import path from 'node:path';
+import { expect, test } from '@playwright/test';
 
-import { expect, test, type Page } from '@playwright/test';
-import { _electron as electron } from 'playwright';
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
-
-async function ensureProduction(window: Page): Promise<void> {
-  if (await window.getByText('Caixa', { exact: true }).isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
-
-test('SMK-VCH-001 — usa voucher parcial e restitui saldo no estorno', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no estorno', async () => {
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -59,10 +52,15 @@ test('SMK-VCH-001 — usa voucher parcial e restitui saldo no estorno', async ()
     await window.getByRole('link', { name: 'Mesas e balcão' }).click();
     await window.getByRole('button', { name: /Balcão/u }).click();
     await window.getByRole('button', { name: new RegExp(productName, 'u') }).click();
-    await window.getByPlaceholder('GTRZ-XXXXXXXX').fill(voucherCode);
-    await window.getByLabel('Valor do voucher').fill('4.00');
+    const voucherSelect = window.getByLabel('Voucher vinculado à comanda');
+    await expect(voucherSelect.locator('option')).toHaveCount(2);
+    await voucherSelect.selectOption(voucherCode);
+    await expect(window.getByText('Saldo disponível', { exact: true })).toBeVisible();
+    await expect(window.getByText('R$ 10,00', { exact: true }).last()).toBeVisible();
+    await window.getByLabel('Valor a utilizar').fill('4.00');
     await window.getByLabel('Valor do pagamento 1').fill('6.00');
     await window.getByLabel('Valor recebido 1').fill('10.00');
+    await expect(window.getByText('Troco: R$ 4,00', { exact: true })).toBeVisible();
     await window.getByRole('button', { name: 'Concluir venda' }).click();
     await expect(window.getByText('Venda concluída e estoque atualizado.')).toBeVisible();
 
@@ -83,6 +81,6 @@ test('SMK-VCH-001 — usa voucher parcial e restitui saldo no estorno', async ()
     voucherCard = window.locator('article.voucher-card').filter({ hasText: voucherCode });
     await expect(voucherCard).toContainText('R$ 10,00');
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

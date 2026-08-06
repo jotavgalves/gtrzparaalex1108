@@ -1,24 +1,13 @@
-import path from 'node:path';
-
 import { expect, test } from '@playwright/test';
-import { _electron as electron } from 'playwright';
 
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
-
-async function ensureProduction(
-  window: Awaited<ReturnType<Awaited<ReturnType<typeof electron.launch>>['firstWindow']>>,
-): Promise<void> {
-  const cashierBadge = window.getByText('Caixa', { exact: true });
-
-  if (await cashierBadge.isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
 test('SMK-TRF-001 — transfere estoque entre eventos e exibe o histórico', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -100,6 +89,6 @@ test('SMK-TRF-001 — transfere estoque entre eventos e exibe o histórico', asy
     await expect(transferCard.getByText('8 → 5', { exact: true })).toBeVisible();
     await expect(transferCard.getByText('0 → 3', { exact: true })).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

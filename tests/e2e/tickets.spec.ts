@@ -1,37 +1,16 @@
-import path from 'node:path';
+import { expect, test } from '@playwright/test';
 
-import { expect, test, type Page } from '@playwright/test';
-import { _electron as electron, type ElectronApplication } from 'playwright';
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
 const actionTimeout = 5_000;
-
-async function ensureProduction(window: Page): Promise<void> {
-  if (await window.getByText('Caixa', { exact: true }).isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
-
-async function closeApplication(application: ElectronApplication): Promise<void> {
-  await new Promise<void>((resolve) => {
-    const timeoutId = setTimeout(() => {
-      application.process().kill();
-      resolve();
-    }, actionTimeout);
-    const finish = (): void => {
-      clearTimeout(timeoutId);
-      resolve();
-    };
-
-    void application.close().then(finish, finish);
-  });
-}
 
 test('SMK-TKT-001 — vende grupo, gera códigos e cancela com reflexo no caixa', async () => {
   test.setTimeout(60_000);
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -115,6 +94,6 @@ test('SMK-TKT-001 — vende grupo, gera códigos e cancela com reflexo no caixa'
     await window.getByRole('link', { name: 'Caixa' }).click();
     await expect(window.getByText('R$ 0,00', { exact: true }).first()).toBeVisible();
   } finally {
-    await closeApplication(electronApplication);
+    await closeElectronApplication(electronApplication);
   }
 });

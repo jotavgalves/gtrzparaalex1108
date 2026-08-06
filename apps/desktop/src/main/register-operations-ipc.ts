@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 
 import {
   addOrderItemInputSchema,
+  bindOrderVoucherInputSchema,
   cancelOrderInputSchema,
   closeOrderInputSchema,
   createServicePointInputSchema,
@@ -12,9 +13,11 @@ import {
   orderSchema,
   removeOrderItemInputSchema,
   servicePointSchema,
+  unbindOrderVoucherInputSchema,
 } from '@gtrz/contracts';
 import {
   addOrderItem,
+  bindOrderVoucher,
   cancelOrder,
   closeOrder,
   createServicePoint,
@@ -24,6 +27,7 @@ import {
   removeOrderItem,
   type DatabaseCloseOrderPaymentInput,
   type DatabaseContext,
+  unbindOrderVoucher,
 } from '@gtrz/database';
 
 interface RegisterOperationsIpcOptions {
@@ -37,6 +41,8 @@ const OPERATION_CHANNELS = [
   IPC_CHANNELS.operationsGetOrder,
   IPC_CHANNELS.operationsAddItem,
   IPC_CHANNELS.operationsRemoveItem,
+  IPC_CHANNELS.operationsBindVoucher,
+  IPC_CHANNELS.operationsUnbindVoucher,
   IPC_CHANNELS.operationsCloseOrder,
   IPC_CHANNELS.operationsCancelOrder,
 ] as const;
@@ -89,6 +95,18 @@ export function registerOperationsIpcHandlers(options: RegisterOperationsIpcOpti
   ipcMain.handle(IPC_CHANNELS.operationsRemoveItem, (_event, payload: unknown) => {
     const input = removeOrderItemInputSchema.parse(payload);
     return orderSchema.parse(removeOrderItem(options.getDatabase(), input));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.operationsBindVoucher, (_event, payload: unknown) => {
+    const input = bindOrderVoucherInputSchema.parse(payload);
+    bindOrderVoucher(options.getDatabase(), input);
+    return orderSchema.parse(getOrder(options.getDatabase(), input.orderId));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.operationsUnbindVoucher, (_event, payload: unknown) => {
+    const input = unbindOrderVoucherInputSchema.parse(payload);
+    unbindOrderVoucher(options.getDatabase(), input.orderId);
+    return orderSchema.parse(getOrder(options.getDatabase(), input.orderId));
   });
 
   ipcMain.handle(IPC_CHANNELS.operationsCloseOrder, (_event, payload: unknown) => {

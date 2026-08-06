@@ -1,3 +1,4 @@
+import type { DatabaseOrderVoucherAllocation } from './operation-vouchers';
 import type { DatabaseVoucherRedemption } from './vouchers';
 
 export type DatabaseServicePointType = 'table' | 'counter';
@@ -53,6 +54,7 @@ export interface DatabaseOrder {
   readonly remainingCents: number;
   readonly items: readonly DatabaseOrderItem[];
   readonly payments: readonly DatabasePayment[];
+  readonly voucherAllocation: DatabaseOrderVoucherAllocation | null;
   readonly voucherRedemptions: readonly DatabaseVoucherRedemption[];
   readonly openedAt: number;
   readonly closedAt: number | null;

@@ -29,6 +29,8 @@ export function TablesPage(): React.JSX.Element {
     openServicePoint,
     addItem,
     removeItem,
+    bindVoucher,
+    unbindVoucher,
     closeCurrentOrder,
     cancelOrder,
     clearOrder,
@@ -76,8 +78,9 @@ export function TablesPage(): React.JSX.Element {
           <strong>{formatMoney(openTotalCents)}</strong>
         </article>
         <article className="summary-card summary-card--accent">
-          <span>Itens disponíveis</span>
+          <span>Opções à venda</span>
           <strong>{availableItems}</strong>
+          <small>Produtos e combos ativos com estoque</small>
         </article>
       </div>
 
@@ -123,9 +126,11 @@ export function TablesPage(): React.JSX.Element {
           <OrderPanel
             busy={busy}
             onBack={clearOrder}
+            onBindVoucher={bindVoucher}
             onCancelOrder={(reason) => cancelOrder(order.id, reason)}
             onCloseOrder={closeCurrentOrder}
             onRemoveItem={removeItem}
+            onUnbindVoucher={unbindVoucher}
             order={order}
             production={production}
           />

@@ -3,6 +3,7 @@ import { getSessionState } from './control';
 import { getOrder, requireActiveOperationEvent, requireOrderRow } from './operation-core';
 import { restoreOrderStock } from './operation-stock';
 import type { DatabaseOrder } from './operation-types';
+import { releaseOrderVoucher } from './operation-vouchers';
 import type { DatabaseContext } from './types';
 import { refundOrderVouchers } from './vouchers';
 
@@ -37,6 +38,8 @@ export function cancelOrder(
     if (order.status === 'paid') {
       restoredUnits = restoreOrderStock(database, eventId, order.id, now);
       refundedVoucherCents = refundOrderVouchers(database, eventId, order.id, now);
+    } else {
+      releaseOrderVoucher(database, order.id);
     }
 
     database.sqlite

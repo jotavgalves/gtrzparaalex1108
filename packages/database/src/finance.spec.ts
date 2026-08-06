@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   addOrderItem,
+  bindOrderVoucher,
   cancelExpense,
   closeCashRegister,
   closeOrder,
@@ -87,8 +88,10 @@ describe('cash and expenses database', () => {
       discountCents: 0,
       payments: [{ method: 'cash', amountCents: 1000, receivedCents: 1500 }],
     });
+    const voucherOrderId = createOrder(database, productId);
+    bindOrderVoucher(database, { orderId: voucherOrderId, code: voucher.code });
     closeOrder(database, {
-      orderId: createOrder(database, productId),
+      orderId: voucherOrderId,
       discountCents: 0,
       payments: [{ method: 'pix', amountCents: 500 }],
       voucherUses: [{ code: voucher.code, amountCents: 500 }],

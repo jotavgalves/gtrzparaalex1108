@@ -8,6 +8,7 @@ import type {
   DatabaseOrder,
   DatabasePayment,
 } from './operation-types';
+import { releaseOrderVoucher, validateOrderVoucherUses } from './operation-vouchers';
 import type { DatabaseContext } from './types';
 import { redeemVouchers, type DatabaseVoucherUseInput } from './vouchers';
 
@@ -68,15 +69,13 @@ export function closeOrder(
     throw new Error('O total da comanda precisa ser maior que zero.');
   }
 
-  const voucherUses = input.voucherUses ?? [];
+  const voucherUses = validateOrderVoucherUses(database, order.id, input.voucherUses ?? []);
   const payments = normalizePayments(input.payments);
   const paymentCents = payments.reduce((total, payment) => total + payment.amountCents, 0);
   const voucherCents = voucherUses.reduce((total, use) => total + use.amountCents, 0);
 
   if (paymentCents + voucherCents !== totalCents) {
-    throw new Error(
-      `A soma de pagamentos e vouchers deve ser igual ao total da comanda: ${String(totalCents)} centavos.`,
-    );
+    throw new Error('A soma dos pagamentos e do voucher deve ser igual ao total da comanda.');
   }
 
   const now = Date.now();
@@ -112,6 +111,7 @@ export function closeOrder(
     database.sqlite
       .prepare('UPDATE service_points SET updated_at = ? WHERE id = ?')
       .run(now, order.service_point_id);
+    releaseOrderVoucher(database, order.id);
     appendAudit(database, {
       action: 'operations.order-paid',
       entityType: 'order',
@@ -127,6 +127,7 @@ export function closeOrder(
         })),
         subtotalCents: order.subtotal_cents,
         totalCents,
+        totalChangeCents: payments.reduce((total, payment) => total + payment.changeCents, 0),
         vouchers: redemptions,
       },
     });
