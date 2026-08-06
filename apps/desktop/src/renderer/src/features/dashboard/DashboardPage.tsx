@@ -6,11 +6,12 @@ import {
   RefreshCw,
   Ticket,
   TriangleAlert,
-  WalletCards,
+  TrendingUp,
 } from 'lucide-react';
 
-import type { DashboardState, InsightAuditRecord } from '@gtrz/contracts';
-
+import gtrzSymbol from '../../assets/brand/gtrz-symbol.svg';
+import { describeAuditAction, describeEntityType } from '../../shared/insights/audit-labels';
+import { OperationalHealth, SalesMethods, TicketCapacity } from './DashboardPanels';
 import { useDashboard } from './useDashboard';
 
 function formatMoney(cents: number): string {
@@ -27,103 +28,25 @@ function formatDate(timestamp: number): string {
   }).format(timestamp);
 }
 
-function describeAction(record: InsightAuditRecord): string {
-  const labels: Readonly<Record<string, string>> = {
-    'event.created': 'Evento criado',
-    'event.selected': 'Evento selecionado',
-    'operations.order-opened': 'Comanda aberta',
-    'operations.order-paid': 'Venda concluída',
-    'operations.order-cancelled': 'Comanda cancelada',
-    'operations.order-refunded': 'Venda estornada',
-    'inventory.stock-moved': 'Estoque movimentado',
-    'voucher.created': 'Voucher emitido',
-    'expense.created': 'Despesa registrada',
-    'ticket.sale-created': 'Ingressos vendidos',
-    'event.closed-with-backup': 'Evento encerrado',
-  };
-  return labels[record.action] ?? record.action.replaceAll('.', ' · ');
-}
+function formatMargin(value: number | null): string {
+  if (value === null) {
+    return 'Sem receita';
+  }
 
-function SalesMethods({ state }: { readonly state: DashboardState }): React.JSX.Element {
-  const methods = [
-    ['Dinheiro', state.salesByMethod.cashCents],
-    ['PIX', state.salesByMethod.pixCents],
-    ['Crédito', state.salesByMethod.creditCardCents],
-    ['Débito', state.salesByMethod.debitCardCents],
-    ['Voucher', state.salesByMethod.voucherCents],
-  ] as const;
-
-  return (
-    <article className="panel insight-panel">
-      <div className="panel__heading">
-        <WalletCards size={20} aria-hidden="true" />
-        <div>
-          <h2>Recebimentos</h2>
-          <p>Distribuição consolidada por meio de pagamento.</p>
-        </div>
-      </div>
-      <div className="insight-breakdown">
-        {methods.map(([label, value]) => (
-          <div key={label}>
-            <span>{label}</span>
-            <strong>{formatMoney(value)}</strong>
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-}
-
-function OperationalHealth({ state }: { readonly state: DashboardState }): React.JSX.Element {
-  return (
-    <article className="panel insight-panel">
-      <div className="panel__heading">
-        <Activity size={20} aria-hidden="true" />
-        <div>
-          <h2>Saúde operacional</h2>
-          <p>Pendências que exigem atenção antes do encerramento.</p>
-        </div>
-      </div>
-      <div className="insight-health-grid">
-        <div
-          className={
-            state.orders.open > 0 ? 'insight-health insight-health--warning' : 'insight-health'
-          }
-        >
-          <span>Comandas abertas</span>
-          <strong>{state.orders.open}</strong>
-        </div>
-        <div
-          className={
-            state.inventory.lowStockProducts > 0
-              ? 'insight-health insight-health--warning'
-              : 'insight-health'
-          }
-        >
-          <span>Estoque baixo</span>
-          <strong>{state.inventory.lowStockProducts}</strong>
-        </div>
-        <div className="insight-health">
-          <span>Vouchers ativos</span>
-          <strong>{state.vouchers.active}</strong>
-        </div>
-        <div className="insight-health">
-          <span>Caixa</span>
-          <strong>
-            {state.cashRegisterStatus === 'open'
-              ? 'Aberto'
-              : state.cashRegisterStatus === 'closed'
-                ? 'Fechado'
-                : 'Não aberto'}
-          </strong>
-        </div>
-      </div>
-    </article>
-  );
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
 export function DashboardPage(): React.JSX.Element {
   const { state, loading, error, reload } = useDashboard();
+  const resultMargin =
+    state === null || state.grossSalesCents === 0
+      ? null
+      : state.projectedResultCents / state.grossSalesCents;
+  const hasOperationalWarning =
+    state !== null && (state.orders.open > 0 || state.inventory.lowStockProducts > 0);
 
   return (
     <section className="feature-page">
@@ -162,30 +85,64 @@ export function DashboardPage(): React.JSX.Element {
       {state?.activeEvent === null || state === null ? null : (
         <>
           <article className="dashboard-event-banner">
-            <div>
+            <img alt="" aria-hidden="true" src={gtrzSymbol} />
+            <div className="dashboard-event-banner__identity">
               <span>Evento em operação</span>
               <strong>{state.activeEvent.name}</strong>
+              <small>Início: {formatDate(state.activeEvent.startsAt)}</small>
             </div>
-            <small>Início: {formatDate(state.activeEvent.startsAt)}</small>
+            <div className="dashboard-event-banner__margin">
+              <span>Margem projetada</span>
+              <strong>{formatMargin(resultMargin)}</strong>
+            </div>
           </article>
+
+          <div
+            className={
+              hasOperationalWarning
+                ? 'dashboard-alert dashboard-alert--warning'
+                : 'dashboard-alert dashboard-alert--success'
+            }
+          >
+            {hasOperationalWarning ? (
+              <TriangleAlert size={18} aria-hidden="true" />
+            ) : (
+              <Activity size={18} aria-hidden="true" />
+            )}
+            <span>
+              {hasOperationalWarning
+                ? 'Há pendências operacionais. Verifique comandas abertas e produtos com estoque baixo.'
+                : 'Operação sem pendências críticas de comandas ou estoque baixo.'}
+            </span>
+          </div>
 
           <div className="summary-grid">
             <article className="summary-card summary-card--accent">
+              <CircleDollarSign className="summary-card__icon" size={20} aria-hidden="true" />
               <span>Faturamento</span>
               <strong>{formatMoney(state.grossSalesCents)}</strong>
               <small>{state.orders.paid} vendas concluídas</small>
             </article>
             <article className="summary-card">
+              <Banknote className="summary-card__icon" size={20} aria-hidden="true" />
               <span>Despesas ativas</span>
               <strong>{formatMoney(state.activeExpensesCents)}</strong>
               <small>Valores não cancelados</small>
             </article>
-            <article className="summary-card">
+            <article
+              className={
+                state.projectedResultCents < 0
+                  ? 'summary-card summary-card--danger'
+                  : 'summary-card'
+              }
+            >
+              <TrendingUp className="summary-card__icon" size={20} aria-hidden="true" />
               <span>Resultado projetado</span>
               <strong>{formatMoney(state.projectedResultCents)}</strong>
               <small>Receita menos despesas</small>
             </article>
             <article className="summary-card">
+              <Banknote className="summary-card__icon" size={20} aria-hidden="true" />
               <span>Caixa físico esperado</span>
               <strong>{formatMoney(state.expectedCashCents)}</strong>
               <small>Dinheiro após movimentações</small>
@@ -224,6 +181,8 @@ export function DashboardPage(): React.JSX.Element {
             </article>
           </div>
 
+          <TicketCapacity state={state} />
+
           <article className="panel insight-panel">
             <div className="panel__heading">
               <Activity size={20} aria-hidden="true" />
@@ -239,8 +198,8 @@ export function DashboardPage(): React.JSX.Element {
                 state.recentActivity.map((record) => (
                   <div className="activity-row" key={record.id}>
                     <div>
-                      <strong>{describeAction(record)}</strong>
-                      <span>{record.entityType}</span>
+                      <strong>{describeAuditAction(record.action)}</strong>
+                      <span>{describeEntityType(record.entityType)}</span>
                     </div>
                     <time>{formatDate(record.createdAt)}</time>
                   </div>

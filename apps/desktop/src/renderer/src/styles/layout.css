@@ -17,42 +17,35 @@
 }
 
 .brand-lockup {
+  position: relative;
   display: flex;
+  min-height: 4.4rem;
   align-items: center;
-  gap: var(--space-3);
-  min-height: 3.25rem;
-  padding: 0 var(--space-2);
+  justify-content: center;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border: 1px solid rgb(242 13 50 / 18%);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 0%, rgb(242 13 50 / 14%), transparent 70%), rgb(20 20 23 / 72%);
+  box-shadow: 0 18px 42px rgb(0 0 0 / 22%);
 }
 
-.brand-lockup__mark {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-brand);
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 900;
-  box-shadow: 0 10px 30px rgb(242 13 50 / 28%);
+.brand-lockup__logo {
+  display: block;
+  width: min(100%, 9.6rem);
+  max-height: 3.3rem;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgb(0 0 0 / 30%));
 }
 
-.brand-lockup div {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-lockup strong {
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.brand-lockup span:last-child {
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
+.brand-lockup__product {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 0.35rem;
+  color: var(--color-text-subtle);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 

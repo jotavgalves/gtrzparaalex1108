@@ -4,6 +4,7 @@ import { NavLink, Outlet } from 'react-router';
 
 import type { SystemInfo } from '@gtrz/contracts';
 
+import gtrzLockup from '../../assets/brand/gtrz-lockup.svg';
 import { navigationModules } from '../../shared/navigation/modules';
 import { ProfileSwitcher } from '../../shared/session/ProfileSwitcher';
 import { useSession } from '../../shared/session/session-context';
@@ -58,11 +59,8 @@ export function AppShell(): React.JSX.Element {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-lockup" aria-label="GTRZ System">
-          <span className="brand-lockup__mark">G</span>
-          <div>
-            <strong>GTRZ</strong>
-            <span>System</span>
-          </div>
+          <img alt="GTRZ" className="brand-lockup__logo" src={gtrzLockup} />
+          <span className="brand-lockup__product">System</span>
         </div>
 
         <div className="event-context">

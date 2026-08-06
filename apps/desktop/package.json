@@ -45,9 +45,14 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "resources/icon.png",
+        "to": "icon.png"
       }
     ],
     "win": {
+      "icon": "resources/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -63,7 +68,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "GTRZ System"
+      "shortcutName": "GTRZ System",
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerHeaderIcon": "resources/icon.ico"
     }
   }
 }

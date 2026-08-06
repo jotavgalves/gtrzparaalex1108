@@ -1,8 +1,9 @@
-import { Filter, RefreshCw, Search, ShieldCheck, X } from 'lucide-react';
+import { Clock3, Filter, RefreshCw, Search, ShieldCheck, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import type { AuditQueryInput, InsightProfile } from '@gtrz/contracts';
 
+import { describeAuditAction, sortAuditActions } from '../../shared/insights/audit-labels';
 import { AuditRecordList } from './AuditRecordList';
 import { useAudit } from './useAudit';
 
@@ -15,6 +16,12 @@ function toTimestamp(value: string): number | undefined {
   return Number.isFinite(timestamp) ? timestamp : undefined;
 }
 
+function toDateTimeInput(timestamp: number): string {
+  const date = new Date(timestamp);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(timestamp - offset).toISOString().slice(0, 16);
+}
+
 export function AuditPage(): React.JSX.Element {
   const { state, loading, error, load } = useAudit();
   const [search, setSearch] = useState('');
@@ -24,11 +31,30 @@ export function AuditPage(): React.JSX.Element {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const records = useMemo(() => state?.records ?? [], [state?.records]);
+  const actions = useMemo(() => sortAuditActions(state?.actions ?? []), [state?.actions]);
+  const productionRecords = records.filter((record) => record.profile === 'production').length;
+  const cashierRecords = records.length - productionRecords;
+  const activeFilterCount = [
+    search.trim().length > 0,
+    eventId !== 'all',
+    profile !== 'all',
+    action !== 'all',
+    from.length > 0,
+    to.length > 0,
+  ].filter(Boolean).length;
+  const fromTimestamp = toTimestamp(from);
+  const toTimestampValue = toTimestamp(to);
+  const dateRangeInvalid =
+    fromTimestamp !== undefined &&
+    toTimestampValue !== undefined &&
+    fromTimestamp > toTimestampValue;
 
   const applyFilters = async (): Promise<void> => {
+    if (dateRangeInvalid) {
+      return;
+    }
+
     const normalizedSearch = search.trim();
-    const fromTimestamp = toTimestamp(from);
-    const toTimestampValue = toTimestamp(to);
     const input: AuditQueryInput = {
       limit: 200,
       ...(normalizedSearch.length === 0 ? {} : { search: normalizedSearch }),
@@ -51,6 +77,12 @@ export function AuditPage(): React.JSX.Element {
     await load({ limit: 100 });
   };
 
+  const applyLastDay = (): void => {
+    const now = Date.now();
+    setFrom(toDateTimeInput(now - 24 * 60 * 60 * 1000));
+    setTo(toDateTimeInput(now));
+  };
+
   return (
     <section className="feature-page">
       <header className="feature-header">
@@ -64,7 +96,7 @@ export function AuditPage(): React.JSX.Element {
         </div>
         <button
           className="button button--secondary"
-          disabled={loading}
+          disabled={loading || dateRangeInvalid}
           onClick={() => {
             void applyFilters();
           }}
@@ -79,17 +111,17 @@ export function AuditPage(): React.JSX.Element {
         <article className="summary-card summary-card--accent">
           <span>Registros exibidos</span>
           <strong>{records.length}</strong>
-          <small>Limite máximo de 200 por consulta</small>
+          <small>Até 200 operações por consulta</small>
         </article>
         <article className="summary-card">
-          <span>Ações catalogadas</span>
-          <strong>{state?.actions.length ?? 0}</strong>
-          <small>Tipos distintos registrados</small>
+          <span>Perfil Produção</span>
+          <strong>{productionRecords}</strong>
+          <small>Operações administrativas exibidas</small>
         </article>
         <article className="summary-card">
-          <span>Eventos disponíveis</span>
-          <strong>{state?.events.length ?? 0}</strong>
-          <small>Abertos, encerrados e arquivados</small>
+          <span>Perfil Caixa</span>
+          <strong>{cashierRecords}</strong>
+          <small>Operações de atendimento exibidas</small>
         </article>
         <article className="summary-card">
           <span>Integridade</span>
@@ -99,12 +131,44 @@ export function AuditPage(): React.JSX.Element {
       </div>
 
       <article className="panel audit-filter-panel">
-        <div className="panel__heading">
-          <Filter size={20} aria-hidden="true" />
-          <div>
-            <h2>Filtros</h2>
-            <p>Combine critérios para localizar uma operação específica.</p>
+        <div className="audit-filter-panel__heading">
+          <div className="panel__heading">
+            <Filter size={20} aria-hidden="true" />
+            <div>
+              <h2>Filtros</h2>
+              <p>Combine critérios para localizar uma operação específica.</p>
+            </div>
           </div>
+          <span className="audit-filter-count">
+            {activeFilterCount === 0
+              ? 'Nenhum filtro ativo'
+              : `${String(activeFilterCount)} ${activeFilterCount === 1 ? 'filtro ativo' : 'filtros ativos'}`}
+          </span>
+        </div>
+
+        <div className="audit-quick-filters">
+          <button
+            className="button button--ghost button--compact"
+            disabled={loading}
+            onClick={applyLastDay}
+            type="button"
+          >
+            <Clock3 size={15} aria-hidden="true" />
+            Últimas 24 horas
+          </button>
+          {eventId !== 'all' ? (
+            <span className="audit-filter-chip">
+              Evento: {state?.events.find((event) => event.id === eventId)?.name ?? eventId}
+            </span>
+          ) : null}
+          {profile !== 'all' ? (
+            <span className="audit-filter-chip">
+              Perfil: {profile === 'production' ? 'Produção' : 'Caixa'}
+            </span>
+          ) : null}
+          {action !== 'all' ? (
+            <span className="audit-filter-chip">Ação: {describeAuditAction(action)}</span>
+          ) : null}
         </div>
 
         <form
@@ -168,9 +232,9 @@ export function AuditPage(): React.JSX.Element {
               value={action}
             >
               <option value="all">Todas as ações</option>
-              {state?.actions.map((item) => (
+              {actions.map((item) => (
                 <option key={item} value={item}>
-                  {item}
+                  {describeAuditAction(item)}
                 </option>
               ))}
             </select>
@@ -179,6 +243,7 @@ export function AuditPage(): React.JSX.Element {
           <label className="form-field">
             <span>Data inicial</span>
             <input
+              aria-invalid={dateRangeInvalid}
               onChange={(event) => {
                 setFrom(event.target.value);
               }}
@@ -190,6 +255,7 @@ export function AuditPage(): React.JSX.Element {
           <label className="form-field">
             <span>Data final</span>
             <input
+              aria-invalid={dateRangeInvalid}
               onChange={(event) => {
                 setTo(event.target.value);
               }}
@@ -198,8 +264,14 @@ export function AuditPage(): React.JSX.Element {
             />
           </label>
 
+          {dateRangeInvalid ? (
+            <p className="form-error audit-date-error">
+              A data inicial não pode ser posterior à data final.
+            </p>
+          ) : null}
+
           <div className="audit-filter-actions">
-            <button className="button" disabled={loading} type="submit">
+            <button className="button" disabled={loading || dateRangeInvalid} type="submit">
               <ShieldCheck size={17} aria-hidden="true" />
               Aplicar filtros
             </button>

@@ -1,5 +1,11 @@
-import { BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import path from 'node:path';
+
+function getWindowIconPath(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.png')
+    : path.join(__dirname, '../../resources/icon.png');
+}
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -11,6 +17,7 @@ export function createMainWindow(): BrowserWindow {
     backgroundColor: '#09090b',
     autoHideMenuBar: true,
     title: 'GTRZ System',
+    icon: getWindowIconPath(),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
