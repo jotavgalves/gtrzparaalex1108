@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ComboApi } from './combos';
 import type { EventCloseApi } from './event-close';
 import type { CashApi, ExpenseApi } from './finance';
+import type { AuditApi, DashboardApi } from './insights';
 import type { InventoryApi } from './inventory';
 import type { OperationsApi } from './operations';
 import type { TicketApi } from './tickets';
@@ -11,6 +12,7 @@ import type { VoucherApi } from './vouchers';
 export * from './combos';
 export * from './event-close';
 export * from './finance';
+export * from './insights';
 export * from './inventory';
 export * from './operations';
 export * from './tickets';
@@ -18,6 +20,8 @@ export * from './vouchers';
 
 export const IPC_CHANNELS = {
   systemGetInfo: 'system:get-info',
+  dashboardGetState: 'dashboard:get-state',
+  auditList: 'audit:list',
   eventsList: 'events:list',
   eventsCreate: 'events:create',
   eventsRename: 'events:rename',
@@ -180,6 +184,8 @@ export interface GtrzDesktopApi {
   readonly system: {
     getInfo(): Promise<SystemInfo>;
   };
+  readonly dashboard: DashboardApi;
+  readonly audit: AuditApi;
   readonly events: {
     list(): Promise<readonly GtrzEvent[]>;
     create(input: CreateEventInput): Promise<GtrzEvent>;

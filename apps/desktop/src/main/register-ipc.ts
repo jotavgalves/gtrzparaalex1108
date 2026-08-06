@@ -35,6 +35,7 @@ import type { BackupService } from './backup-service';
 import { registerComboIpcHandlers } from './register-combo-ipc';
 import { registerEventCloseIpcHandlers } from './register-event-close-ipc';
 import { registerFinanceIpcHandlers } from './register-finance-ipc';
+import { registerInsightsIpcHandlers } from './register-insights-ipc';
 import { registerInventoryIpcHandlers } from './register-inventory-ipc';
 import { registerOperationsIpcHandlers } from './register-operations-ipc';
 import { registerTicketIpcHandlers } from './register-ticket-ipc';
@@ -148,6 +149,7 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     return backupRecordSchema.parse(await options.backupService.verify(input.filePath));
   });
 
+  registerInsightsIpcHandlers({ getDatabase: options.getDatabase });
   registerInventoryIpcHandlers({ getDatabase: options.getDatabase });
   registerComboIpcHandlers({ getDatabase: options.getDatabase });
   registerEventCloseIpcHandlers({

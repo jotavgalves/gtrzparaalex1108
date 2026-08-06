@@ -37,6 +37,7 @@ import {
 import { comboApi } from './combo-api';
 import { eventCloseApi } from './event-close-api';
 import { cashApi, expenseApi } from './finance-api';
+import { auditApi, dashboardApi } from './insights-api';
 import { inventoryApi } from './inventory-api';
 import { operationsApi } from './operations-api';
 import { ticketApi } from './ticket-api';
@@ -49,6 +50,8 @@ const api: GtrzDesktopApi = {
       return systemInfoSchema.parse(payload);
     },
   },
+  dashboard: dashboardApi,
+  audit: auditApi,
   events: {
     async list(): Promise<readonly GtrzEvent[]> {
       const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsList);

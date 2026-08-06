@@ -390,6 +390,7 @@ export * from './combos';
 export * from './control';
 export * from './event-close';
 export * from './expenses';
+export * from './insights';
 export * from './inventory';
 export * from './operations';
 export * from './stock-transfers';

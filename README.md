@@ -1,74 +1,138 @@
 # GTRZ System
 
-PDV desktop offline para operação e gestão de eventos da GTRZ.
+PDV desktop offline para operação e gestão completa de eventos da GTRZ.
 
-> Estado atual: **implementação da fundação técnica iniciada** na branch `feat/fundacao-tecnica`.
+## Situação do projeto
 
-## Objetivo
+O sistema está funcional e cobre o ciclo operacional do evento, do cadastro ao encerramento com backup. A interface, o banco SQLite e os recursos necessários ao funcionamento são empacotados localmente, sem dependência de internet durante a operação.
 
-Centralizar, em um único aplicativo Windows e sem dependência de internet, a gestão de:
+## Funcionalidades
 
-- eventos;
-- estoque e produtos;
-- combos;
-- mesas e balcão;
-- vendas e pagamentos;
-- vouchers;
-- caixa;
-- despesas;
-- ingressos;
-- auditoria;
-- backups e configurações.
+### Eventos e acesso
 
-## Fundação implementada
+- criação, seleção, renomeação, encerramento e arquivamento de eventos;
+- separação integral dos dados por evento;
+- perfis **Produção** e **Caixa**;
+- senha obrigatória para retornar ao perfil Produção;
+- troca segura de senha administrativa;
+- auditoria das alterações e dos acessos protegidos.
 
-- workspace modular com aplicativo e pacotes separados;
-- Electron com processos `main`, `preload` e `renderer` isolados;
-- uma única raiz React e um único roteador;
-- onze abas registradas como módulos independentes;
-- SQLite local com versão de esquema e verificação de integridade;
-- contrato IPC tipado e validado com Zod;
-- tema escuro GTRZ com Lucide e Inter incorporados ao bundle;
-- testes unitários, smoke estrutural e smoke E2E do Electron;
-- portões automáticos para TypeScript, lint, formatação, ciclos, código morto e arquitetura;
-- instalador Windows preparado com Electron Builder;
-- recursos de marca reservados para os arquivos oficiais contidos em `LOGOS.zip`.
+### Catálogo e estoque
 
-As telas atuais representam a fundação navegável. Os fluxos comerciais serão implementados por fase, começando por eventos, perfis e configurações básicas.
+- categorias, produtos e combos;
+- preço de custo, preço de venda, lucro bruto e margem;
+- saldo independente por evento;
+- compras, perdas, quebras, consumo interno, cortesias, devoluções e correções;
+- transferências atômicas entre eventos;
+- alertas de estoque baixo;
+- baixa automática nas vendas e devolução exata nos estornos;
+- custos e margens ocultos no perfil Caixa.
+
+### Mesas, balcão e vendas
+
+- balcão automático por evento;
+- mesas e comandas independentes;
+- produtos e combos no carrinho;
+- descontos;
+- dinheiro, PIX, crédito, débito e voucher;
+- pagamentos simples ou mistos;
+- cálculo e registro de troco;
+- fechamento transacional da venda e do estoque;
+- cancelamento de comandas abertas;
+- estorno auditado de vendas pagas;
+- histórico recente de operações.
+
+### Vouchers
+
+- emissão com código automático ou informado;
+- saldo inicial e consumo parcial;
+- bloqueio, reativação e esgotamento;
+- razão imutável de saldo;
+- combinação com outros meios de pagamento;
+- restituição automática em estornos.
+
+### Caixa e despesas
+
+- abertura e fechamento do caixa;
+- suprimentos e retiradas;
+- recebimentos consolidados por meio de pagamento;
+- caixa físico esperado;
+- valor contado e diferença de fechamento;
+- despesas por categoria e forma de pagamento;
+- cancelamento auditado de despesas;
+- resultado projetado do evento.
+
+### Ingressos
+
+- lotes com preço, capacidade e status;
+- venda individual ou em grupo;
+- origens Sympla, WhatsApp, porta e cortesia;
+- códigos automáticos ou manuais, individuais e únicos;
+- cortesias separadas do faturamento;
+- cancelamento lógico com invalidação de códigos;
+- restauração da capacidade após cancelamento;
+- integração automática da receita ao caixa.
+
+### Consolidação, auditoria e encerramento
+
+- visão geral com faturamento, despesas, resultado, caixa, estoque, ingressos e vouchers;
+- indicadores de saúde operacional;
+- atividade recente do evento;
+- auditoria pesquisável por evento, perfil, ação, texto e período;
+- detalhes técnicos somente leitura;
+- bloqueio do encerramento enquanto houver pendências;
+- conciliação do caixa físico;
+- backup final obrigatório e verificado;
+- remoção do evento da operação ativa somente após o fechamento completo.
+
+### Backups
+
+- backup automático ao iniciar o aplicativo;
+- backup manual;
+- backup obrigatório ao encerrar o evento;
+- verificação de integridade;
+- escolha da pasta de destino;
+- importação e restauração protegidas por backup preventivo.
 
 ## Perfis de acesso
 
-O sistema terá somente dois perfis:
+- **Produção:** acesso administrativo completo, incluindo eventos, custos, despesas, ingressos, auditoria, visão geral, backups e configurações.
+- **Caixa:** acesso às mesas, ao balcão e à consulta operacional do estoque, sem custos, margens ou módulos administrativos.
 
-- **Produção:** acesso administrativo completo a todos os módulos e configurações.
-- **Caixa:** acesso às mesas e à consulta operacional do estoque. Não acessa ingressos, custos, margens, despesas, relatórios administrativos, auditoria ou configurações. Edições e cancelamentos protegidos exigem senha da Produção.
+A senha inicial do perfil Produção é `121225`. Altere-a em **Configurações** antes de utilizar o sistema em um evento real.
 
-## Características obrigatórias
+## Instalação no Windows
 
-- Aplicativo desktop para um único computador.
-- Funcionamento integralmente offline após a instalação.
-- Banco de dados local SQLite.
-- Interface escura com vermelho vivo e branco.
-- Ícones Lucide incorporados ao aplicativo para uso offline.
-- Fonte incorporada ao pacote do aplicativo para uso offline.
-- Separação completa dos dados por evento.
-- Auditoria de todas as operações relevantes.
-- Backup automático, manual, ao encerrar evento, restauração e importação de backup.
-- Testes unitários, de integração, interface e smoke identificados por função.
-- Arquitetura de monólito modular, com cada aba isolada por domínio.
-- Uma única raiz React e um único roteador.
-- Bloqueios automáticos contra dependências circulares, imports indevidos, código morto, implementações duplicadas e sobreposição de código legado.
+O pipeline da branch `main` gera o instalador no formato:
 
-## Executar localmente
+```text
+GTRZ-System-<versão>-Setup.exe
+```
+
+O instalador é publicado como artefato do workflow **Qualidade e arquitetura** com o nome **GTRZ-System-Windows**.
+
+Requisitos de uso:
+
+- Windows 10 ou 11 x64;
+- permissão para instalar o aplicativo;
+- espaço local para o banco de dados e os backups.
+
+## Desenvolvimento
 
 Requisitos:
 
-- Windows 10 ou 11 x64;
-- Node.js 22.13 ou superior;
-- npm 10.9.8 ou compatível.
+- Node.js 22.23.1;
+- npm 10.9.8.
+
+Instalação reproduzível:
 
 ```bash
-npm install
+npm ci
+```
+
+Executar em desenvolvimento:
+
+```bash
 npm run dev
 ```
 
@@ -76,40 +140,69 @@ Validação completa:
 
 ```bash
 npm run quality
+npm run build
 npm run test:e2e
 ```
 
-Gerar o instalador:
+Gerar o instalador Windows:
 
 ```bash
 npm run package:win
 ```
 
-## Estrutura principal
+## Arquitetura
 
 ```text
 apps/desktop/
-├─ src/main/       # janela, ciclo do Electron e banco
-├─ src/preload/    # API mínima exposta ao renderer
-├─ src/renderer/   # interface, rotas e features
-└─ resources/      # identidade visual e instalador
+├─ src/main/       # ciclo do Electron, banco, backups e handlers IPC
+├─ src/preload/    # API mínima, tipada e validada exposta ao renderer
+├─ src/renderer/   # interface React, rotas e módulos funcionais
+└─ resources/      # identidade visual e configuração do instalador
 
 packages/
-├─ contracts/      # contratos IPC validados
-├─ database/       # SQLite, esquema e migrações
-└─ domain/         # regras puras e cálculos
+├─ contracts/      # contratos IPC e schemas Zod
+├─ database/       # SQLite, migrações, transações e consultas
+└─ domain/         # regras puras e cálculos monetários
 ```
 
-## Documentação
+Princípios obrigatórios:
 
-- [`docs/PLANO_GERAL.md`](docs/PLANO_GERAL.md): escopo funcional consolidado.
-- [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md): arquitetura técnica proposta.
-- [`docs/PADRAO_DE_CODIGO.md`](docs/PADRAO_DE_CODIGO.md): modularidade obrigatória e portões contra código sujo ou legado.
-- [`docs/MODELO_DE_DADOS.md`](docs/MODELO_DE_DADOS.md): entidades e relacionamentos.
-- [`docs/REGRAS_DE_NEGOCIO.md`](docs/REGRAS_DE_NEGOCIO.md): regras críticas e invariantes.
-- [`docs/TESTES_SMOKE.md`](docs/TESTES_SMOKE.md): catálogo inicial de testes automatizados.
-- [`docs/ROADMAP.md`](docs/ROADMAP.md): fases de implementação e critérios de conclusão.
-- [`docs/DECISOES.md`](docs/DECISOES.md): decisões já confirmadas e pendências futuras.
+- funcionamento offline;
+- um único processo de renderização React e um único roteador;
+- isolamento entre renderer, infraestrutura e banco;
+- valores monetários armazenados em centavos inteiros;
+- operações críticas executadas em transações SQLite;
+- auditoria imutável;
+- migrações aditivas e versionadas;
+- bloqueio automático de ciclos, código morto, imports indevidos e arquivos excessivamente grandes.
+
+## Qualidade
+
+O workflow executa:
+
+- instalação reproduzível;
+- auditoria de vulnerabilidades;
+- reconstrução das dependências nativas do Electron;
+- Prettier;
+- TypeScript estrito;
+- ESLint;
+- verificação arquitetural;
+- detecção de ciclos e código morto;
+- testes unitários e de integração;
+- build do Electron;
+- jornadas E2E reais;
+- geração e publicação do instalador Windows na `main`.
+
+## Documentação técnica
+
+- [`docs/PLANO_GERAL.md`](docs/PLANO_GERAL.md)
+- [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
+- [`docs/PADRAO_DE_CODIGO.md`](docs/PADRAO_DE_CODIGO.md)
+- [`docs/MODELO_DE_DADOS.md`](docs/MODELO_DE_DADOS.md)
+- [`docs/REGRAS_DE_NEGOCIO.md`](docs/REGRAS_DE_NEGOCIO.md)
+- [`docs/TESTES_SMOKE.md`](docs/TESTES_SMOKE.md)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md)
+- [`docs/DECISOES.md`](docs/DECISOES.md)
 
 ## Stack
 
@@ -120,10 +213,8 @@ packages/
 - SQLite e Drizzle ORM
 - Zod
 - Lucide React
-- Inter Variable local
+- Inter Variable incorporada
 - Vitest
 - Playwright
 - ESLint
 - Madge e Knip
-
-A stack somente poderá ser ajustada mediante decisão documentada antes da implementação do módulo afetado.
