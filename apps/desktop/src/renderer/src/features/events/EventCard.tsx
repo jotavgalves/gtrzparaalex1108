@@ -18,6 +18,7 @@ interface EventCardProps {
   readonly busy: boolean;
   readonly onSelect: (eventId: string) => Promise<void>;
   readonly onRename: (eventId: string, name: string) => Promise<void>;
+  readonly onRequestClose: (eventId: string) => void;
   readonly onChangeStatus: (eventId: string, status: EventStatus) => Promise<void>;
 }
 
@@ -40,6 +41,7 @@ export function EventCard({
   busy,
   onSelect,
   onRename,
+  onRequestClose,
   onChangeStatus,
 }: EventCardProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
@@ -123,12 +125,12 @@ export function EventCard({
           </button>
         ) : null}
 
-        {event.status === 'open' ? (
+        {event.status === 'open' && isActive ? (
           <button
             className="button button--secondary button--compact"
             disabled={busy}
             onClick={() => {
-              void onChangeStatus(event.id, 'closed');
+              onRequestClose(event.id);
             }}
             type="button"
           >

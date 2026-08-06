@@ -33,7 +33,12 @@ import {
 
 import type { BackupService } from './backup-service';
 import { registerComboIpcHandlers } from './register-combo-ipc';
+import { registerEventCloseIpcHandlers } from './register-event-close-ipc';
+import { registerFinanceIpcHandlers } from './register-finance-ipc';
 import { registerInventoryIpcHandlers } from './register-inventory-ipc';
+import { registerOperationsIpcHandlers } from './register-operations-ipc';
+import { registerTicketIpcHandlers } from './register-ticket-ipc';
+import { registerVoucherIpcHandlers } from './register-voucher-ipc';
 
 interface RegisterIpcOptions {
   readonly getDatabase: () => DatabaseContext;
@@ -86,21 +91,18 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     return eventSchema.parse(renameEvent(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsChangeStatus, async (_event, payload: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.eventsChangeStatus, (_event, payload: unknown) => {
     const input = changeEventStatusInputSchema.parse(payload);
-    const updatedEvent = changeEventStatus(options.getDatabase(), input);
+    const database = options.getDatabase();
+    const current = listEvents(database).find((event) => event.id === input.eventId);
 
-    if (input.status === 'closed') {
-      try {
-        await options.backupService.createBackup('event-close');
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : 'Falha desconhecida ao gerar o backup.';
-        throw new Error(`O evento foi encerrado, mas o backup automático falhou: ${message}`);
-      }
+    if (current?.status === 'open' && input.status === 'closed') {
+      throw new Error(
+        'Use o encerramento integrado para conciliar o caixa e gerar o backup final.',
+      );
     }
 
-    return eventSchema.parse(updatedEvent);
+    return eventSchema.parse(changeEventStatus(database, input));
   });
 
   ipcMain.handle(IPC_CHANNELS.eventsSetActive, (_event, payload: unknown) => {
@@ -148,4 +150,12 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
 
   registerInventoryIpcHandlers({ getDatabase: options.getDatabase });
   registerComboIpcHandlers({ getDatabase: options.getDatabase });
+  registerEventCloseIpcHandlers({
+    getDatabase: options.getDatabase,
+    backupService: options.backupService,
+  });
+  registerFinanceIpcHandlers({ getDatabase: options.getDatabase });
+  registerOperationsIpcHandlers({ getDatabase: options.getDatabase });
+  registerTicketIpcHandlers({ getDatabase: options.getDatabase });
+  registerVoucherIpcHandlers({ getDatabase: options.getDatabase });
 }

@@ -6,3 +6,9 @@
 @import './inventory.css';
 @import './transfers.css';
 @import './combos.css';
+@import './operations.css';
+@import './cancellations.css';
+@import './vouchers.css';
+@import './finance.css';
+@import './tickets.css';
+@import './event-close.css';

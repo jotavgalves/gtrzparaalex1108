@@ -35,7 +35,12 @@ import {
 } from '@gtrz/contracts';
 
 import { comboApi } from './combo-api';
+import { eventCloseApi } from './event-close-api';
+import { cashApi, expenseApi } from './finance-api';
 import { inventoryApi } from './inventory-api';
+import { operationsApi } from './operations-api';
+import { ticketApi } from './ticket-api';
+import { voucherApi } from './voucher-api';
 
 const api: GtrzDesktopApi = {
   system: {
@@ -73,6 +78,7 @@ const api: GtrzDesktopApi = {
       return sessionStateSchema.parse(payload);
     },
   },
+  eventClose: eventCloseApi,
   session: {
     async getState(): Promise<SessionState> {
       const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.sessionGetState);
@@ -122,6 +128,11 @@ const api: GtrzDesktopApi = {
   },
   inventory: inventoryApi,
   combos: comboApi,
+  operations: operationsApi,
+  vouchers: voucherApi,
+  cash: cashApi,
+  expenses: expenseApi,
+  tickets: ticketApi,
 };
 
 contextBridge.exposeInMainWorld('gtrz', api);

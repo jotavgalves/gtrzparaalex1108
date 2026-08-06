@@ -1,10 +1,20 @@
 import { z } from 'zod';
 
 import type { ComboApi } from './combos';
+import type { EventCloseApi } from './event-close';
+import type { CashApi, ExpenseApi } from './finance';
 import type { InventoryApi } from './inventory';
+import type { OperationsApi } from './operations';
+import type { TicketApi } from './tickets';
+import type { VoucherApi } from './vouchers';
 
 export * from './combos';
+export * from './event-close';
+export * from './finance';
 export * from './inventory';
+export * from './operations';
+export * from './tickets';
+export * from './vouchers';
 
 export const IPC_CHANNELS = {
   systemGetInfo: 'system:get-info',
@@ -13,6 +23,8 @@ export const IPC_CHANNELS = {
   eventsRename: 'events:rename',
   eventsChangeStatus: 'events:change-status',
   eventsSetActive: 'events:set-active',
+  eventClosePreview: 'event-close:preview',
+  eventCloseComplete: 'event-close:complete',
   sessionGetState: 'session:get-state',
   sessionSwitchProfile: 'session:switch-profile',
   settingsChangeProductionPassword: 'settings:change-production-password',
@@ -31,6 +43,29 @@ export const IPC_CHANNELS = {
   combosList: 'combos:list',
   combosCreate: 'combos:create',
   combosUpdate: 'combos:update',
+  operationsGetState: 'operations:get-state',
+  operationsCreateServicePoint: 'operations:create-service-point',
+  operationsOpenOrder: 'operations:open-order',
+  operationsGetOrder: 'operations:get-order',
+  operationsAddItem: 'operations:add-item',
+  operationsRemoveItem: 'operations:remove-item',
+  operationsCloseOrder: 'operations:close-order',
+  operationsCancelOrder: 'operations:cancel-order',
+  vouchersGetState: 'vouchers:get-state',
+  vouchersCreate: 'vouchers:create',
+  vouchersChangeStatus: 'vouchers:change-status',
+  cashGetState: 'cash:get-state',
+  cashOpen: 'cash:open',
+  cashRecordMovement: 'cash:record-movement',
+  cashClose: 'cash:close',
+  expensesGetState: 'expenses:get-state',
+  expensesCreate: 'expenses:create',
+  expensesCancel: 'expenses:cancel',
+  ticketsGetState: 'tickets:get-state',
+  ticketsCreateLot: 'tickets:create-lot',
+  ticketsUpdateLot: 'tickets:update-lot',
+  ticketsCreateSale: 'tickets:create-sale',
+  ticketsCancelSale: 'tickets:cancel-sale',
 } as const;
 
 export const systemInfoSchema = z.object({
@@ -152,6 +187,7 @@ export interface GtrzDesktopApi {
     changeStatus(input: ChangeEventStatusInput): Promise<GtrzEvent>;
     setActive(input: SetActiveEventInput): Promise<SessionState>;
   };
+  readonly eventClose: EventCloseApi;
   readonly session: {
     getState(): Promise<SessionState>;
     switchProfile(input: SwitchProfileInput): Promise<SessionState>;
@@ -168,4 +204,9 @@ export interface GtrzDesktopApi {
   };
   readonly inventory: InventoryApi;
   readonly combos: ComboApi;
+  readonly operations: OperationsApi;
+  readonly vouchers: VoucherApi;
+  readonly cash: CashApi;
+  readonly expenses: ExpenseApi;
+  readonly tickets: TicketApi;
 }

@@ -34,7 +34,7 @@ if (!hasSingleInstanceLock) {
     mainWindow.focus();
   });
 
-  void app.whenReady().then(() => {
+  void app.whenReady().then(async () => {
     try {
       const userDataPath = app.getPath('userData');
       const databasePath = path.join(userDataPath, 'gtrz-system.sqlite');
@@ -52,8 +52,8 @@ if (!hasSingleInstanceLock) {
         backupService,
       });
 
+      await backupService.createBackup('automatic').catch(() => undefined);
       mainWindow = createMainWindow();
-      void backupService.createBackup('automatic').catch(() => undefined);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : 'Falha desconhecida na inicialização.';
