@@ -1,0 +1,36 @@
+name: Aplicar etapa final do PR 18
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.number == 18 && github.event.pull_request.head.ref == 'feat/operacao-vouchers-despesas-auditoria'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da branch operacional
+        uses: actions/checkout@v5
+        with:
+          ref: feat/operacao-vouchers-despesas-auditoria
+          fetch-depth: 0
+
+      - name: Reconstruir, verificar e aplicar patch
+        shell: bash
+        run: |
+          cat automation/stage2.spart.* | base64 --decode | xz --decompress > /tmp/stage2.patch
+          git apply --check /tmp/stage2.patch
+          git apply --index /tmp/stage2.patch
+          rm -rf automation
+          rm -f .github/workflows/apply-stage2-temporary.yml
+          rm -f .github/workflows/export-source-temporary.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat: conclui despesas, exclusões e auditoria avançada"
+          git push origin HEAD:feat/operacao-vouchers-despesas-auditoria
