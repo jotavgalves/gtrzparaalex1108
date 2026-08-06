@@ -55,7 +55,7 @@ test('SMK-TKT-001 — vende grupo, gera códigos e cancela com reflexo no caixa'
     }
 
     await window.getByRole('link', { name: 'Ingressos' }).click();
-    await expect(window.getByRole('heading', { name: 'Ingressos' })).toBeVisible();
+    await expect(window.getByRole('heading', { name: 'Ingressos', exact: true })).toBeVisible();
     await window.getByPlaceholder('Ex.: Segundo lote').fill(lotName);
     await window.getByPlaceholder('60,00').fill('50.00');
     await window.getByPlaceholder('200').fill('3');
