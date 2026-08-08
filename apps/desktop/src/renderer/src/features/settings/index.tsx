@@ -1,5 +1,17 @@
-import { KeyRound, Settings, ShieldCheck } from 'lucide-react';
-import { useState, type SyntheticEvent } from 'react';
+import { CreditCard, KeyRound, Settings, ShieldCheck } from 'lucide-react';
+import { useEffect, useState, type SyntheticEvent } from 'react';
+
+function basisPointsToInput(value: number): string {
+  return (value / 100).toFixed(2);
+}
+
+function inputToBasisPoints(value: string): number {
+  const amount = Number(value.trim().replace(',', '.'));
+  if (!Number.isFinite(amount) || amount < 0 || amount > 100) {
+    throw new Error('Informe uma taxa entre 0% e 100%.');
+  }
+  return Math.round(amount * 100);
+}
 
 export function SettingsPage(): React.JSX.Element {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -8,6 +20,40 @@ export function SettingsPage(): React.JSX.Element {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [terminalLoading, setTerminalLoading] = useState(true);
+  const [terminalSubmitting, setTerminalSubmitting] = useState(false);
+  const [terminalEventName, setTerminalEventName] = useState<string | null>(null);
+  const [debitRate, setDebitRate] = useState('0.00');
+  const [creditRate, setCreditRate] = useState('0.00');
+  const [terminalMessage, setTerminalMessage] = useState<string | null>(null);
+  const [terminalError, setTerminalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadPaymentTerminal(): Promise<void> {
+      setTerminalLoading(true);
+      setTerminalError(null);
+      try {
+        const [settings, session] = await Promise.all([
+          window.gtrz.settings.getPaymentTerminal(),
+          window.gtrz.session.getState(),
+        ]);
+        setDebitRate(basisPointsToInput(settings.debitRateBasisPoints));
+        setCreditRate(basisPointsToInput(settings.creditRateBasisPoints));
+        setTerminalEventName(session.activeEvent?.name ?? null);
+      } catch (loadError: unknown) {
+        setTerminalError(
+          loadError instanceof Error
+            ? loadError.message
+            : 'Não foi possível carregar a configuração da maquininha.',
+        );
+      } finally {
+        setTerminalLoading(false);
+      }
+    }
+
+    void loadPaymentTerminal();
+  }, []);
 
   async function handleSubmit(formEvent: SyntheticEvent<HTMLFormElement>): Promise<void> {
     formEvent.preventDefault();
@@ -34,6 +80,33 @@ export function SettingsPage(): React.JSX.Element {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleTerminalSubmit(
+    formEvent: SyntheticEvent<HTMLFormElement>,
+  ): Promise<void> {
+    formEvent.preventDefault();
+    setTerminalSubmitting(true);
+    setTerminalMessage(null);
+    setTerminalError(null);
+
+    try {
+      const settings = await window.gtrz.settings.updatePaymentTerminal({
+        debitRateBasisPoints: inputToBasisPoints(debitRate),
+        creditRateBasisPoints: inputToBasisPoints(creditRate),
+      });
+      setDebitRate(basisPointsToInput(settings.debitRateBasisPoints));
+      setCreditRate(basisPointsToInput(settings.creditRateBasisPoints));
+      setTerminalMessage('Taxas da maquininha salvas para este evento.');
+    } catch (submitError: unknown) {
+      setTerminalError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Não foi possível salvar as taxas da maquininha.',
+      );
+    } finally {
+      setTerminalSubmitting(false);
     }
   }
 
@@ -124,6 +197,69 @@ export function SettingsPage(): React.JSX.Element {
           >
             <KeyRound size={17} aria-hidden="true" />
             Alterar senha
+          </button>
+        </form>
+
+        <form
+          className="panel form-panel"
+          onSubmit={(formEvent) => void handleTerminalSubmit(formEvent)}
+        >
+          <div className="panel__heading">
+            <CreditCard size={20} aria-hidden="true" />
+            <div>
+              <h2>Maquininha do evento</h2>
+              <p>
+                {terminalEventName === null
+                  ? 'Opere um evento para definir as taxas da maquininha.'
+                  : `Evento em operação: ${terminalEventName}`}
+              </p>
+            </div>
+          </div>
+
+          <label className="form-field">
+            <span>Taxa débito (%)</span>
+            <input
+              disabled={terminalLoading || terminalEventName === null}
+              inputMode="decimal"
+              max="100"
+              min="0"
+              onChange={(inputEvent) => {
+                setDebitRate(inputEvent.target.value);
+              }}
+              required
+              step="0.01"
+              type="number"
+              value={debitRate}
+            />
+          </label>
+
+          <label className="form-field">
+            <span>Taxa crédito (%)</span>
+            <input
+              disabled={terminalLoading || terminalEventName === null}
+              inputMode="decimal"
+              max="100"
+              min="0"
+              onChange={(inputEvent) => {
+                setCreditRate(inputEvent.target.value);
+              }}
+              required
+              step="0.01"
+              type="number"
+              value={creditRate}
+            />
+          </label>
+
+          {terminalError === null ? null : <p className="form-error">{terminalError}</p>}
+          {terminalMessage === null ? null : <p className="form-success">{terminalMessage}</p>}
+
+          <button
+            className="button button--primary"
+            disabled={terminalLoading || terminalSubmitting || terminalEventName === null}
+            type="submit"
+          >
+            <CreditCard size={17} aria-hidden="true" />
+            Salvar taxas da maquininha
           </button>
         </form>
       </div>
