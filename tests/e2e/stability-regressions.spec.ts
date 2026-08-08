@@ -35,9 +35,9 @@ test('SMK-REG-001 — sidebar não rola na horizontal e vouchers respeitam o eve
 
     await window.getByRole('link', { name: 'Vouchers' }).click();
     await expect(window.getByRole('heading', { name: 'Vouchers', exact: true })).toBeVisible();
-    await expect(window.getByText('Selecione um evento aberto antes de emitir vouchers.')).toHaveCount(
-      0,
-    );
+    await expect(
+      window.getByText('Selecione um evento aberto antes de emitir vouchers.'),
+    ).toHaveCount(0);
     await expect(window.getByRole('heading', { name: 'Emitir voucher', exact: true })).toBeVisible();
   } finally {
     await closeElectronApplication(electronApplication);
