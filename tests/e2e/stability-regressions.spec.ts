@@ -83,7 +83,9 @@ test('SMK-REG-002 — salva taxas da maquininha por evento', async () => {
     await window.getByRole('button', { name: 'Salvar taxas da maquininha' }).click();
     await expect(window.getByText('Taxas da maquininha salvas para este evento.')).toBeVisible();
 
-    await window.getByRole('link', { name: 'Dashboard' }).click();
+    await window.reload();
+    await window.waitForLoadState('domcontentloaded');
+    await ensureProduction(window);
     await window.getByRole('link', { name: 'Configurações' }).click();
     await expect(window.getByLabel('Taxa débito (%)')).toHaveValue('2.69');
     await expect(window.getByLabel('Taxa crédito (%)')).toHaveValue('4.49');
