@@ -37,8 +37,26 @@ jobs:
       - name: Reconstruir dependências nativas do Electron
         run: npx electron-builder install-app-deps
 
-      - name: Validar qualidade
-        run: npm run quality
+      - name: Validar formatação
+        run: npm run format:check
+
+      - name: Validar TypeScript
+        run: npm run typecheck
+
+      - name: Validar ESLint
+        run: npm run lint
+
+      - name: Validar arquitetura
+        run: npm run architecture:check
+
+      - name: Validar ciclos
+        run: npm run cycles:check
+
+      - name: Validar código morto
+        run: npm run deadcode:check
+
+      - name: Executar testes unitários
+        run: npx vitest run --testTimeout=15000
 
       - name: Gerar build
         run: npm run build --workspace @gtrz/desktop
