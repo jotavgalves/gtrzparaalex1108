@@ -23,6 +23,9 @@ export function VouchersPage(): React.JSX.Element {
     (total, voucher) => total + voucher.remainingBalanceCents,
     0,
   );
+  const hasActiveEvent = state?.activeEventId !== null && state !== null;
+  const showMissingEventWarning =
+    !loading && error === null && state !== null && state.activeEventId === null;
 
   return (
     <section className="feature-page">
@@ -64,7 +67,7 @@ export function VouchersPage(): React.JSX.Element {
         </article>
       </div>
 
-      {state?.activeEventId === null || state === null ? (
+      {showMissingEventWarning ? (
         <div className="inventory-warning">
           <TriangleAlert size={19} aria-hidden="true" />
           <span>Selecione um evento aberto antes de emitir vouchers.</span>
@@ -74,7 +77,7 @@ export function VouchersPage(): React.JSX.Element {
       {error === null ? null : <p className="form-error">{error}</p>}
       {message === null ? null : <p className="form-success">{message}</p>}
 
-      {state?.activeEventId !== null && state !== null ? (
+      {hasActiveEvent ? (
         <div className="voucher-layout">
           <article className="panel">
             <VoucherForm busy={busy} onSubmit={createVoucher} />
@@ -100,9 +103,7 @@ export function VouchersPage(): React.JSX.Element {
         </div>
       ) : null}
 
-      {state?.activeEventId !== null && state !== null ? (
-        <VoucherHistory transactions={transactions} />
-      ) : null}
+      {hasActiveEvent ? <VoucherHistory transactions={transactions} /> : null}
     </section>
   );
 }
