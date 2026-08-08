@@ -32,6 +32,8 @@ export const IPC_CHANNELS = {
   sessionGetState: 'session:get-state',
   sessionSwitchProfile: 'session:switch-profile',
   settingsChangeProductionPassword: 'settings:change-production-password',
+  settingsGetPaymentTerminal: 'settings:get-payment-terminal',
+  settingsUpdatePaymentTerminal: 'settings:update-payment-terminal',
   backupsGetState: 'backups:get-state',
   backupsChooseDestination: 'backups:choose-destination',
   backupsCreateManual: 'backups:create-manual',
@@ -130,6 +132,17 @@ export const changeProductionPasswordInputSchema = z.object({
   newPassword: z.string().min(6).max(128),
 });
 
+export const paymentTerminalSettingsSchema = z.object({
+  activeEventId: z.uuid().nullable(),
+  debitRateBasisPoints: z.number().int().min(0).max(10_000),
+  creditRateBasisPoints: z.number().int().min(0).max(10_000),
+});
+
+export const updatePaymentTerminalSettingsInputSchema = z.object({
+  debitRateBasisPoints: z.number().int().min(0).max(10_000),
+  creditRateBasisPoints: z.number().int().min(0).max(10_000),
+});
+
 export const operationResultSchema = z.object({
   success: z.literal(true),
 });
@@ -175,6 +188,10 @@ export type SetActiveEventInput = z.infer<typeof setActiveEventInputSchema>;
 export type SessionState = z.infer<typeof sessionStateSchema>;
 export type SwitchProfileInput = z.infer<typeof switchProfileInputSchema>;
 export type ChangeProductionPasswordInput = z.infer<typeof changeProductionPasswordInputSchema>;
+export type PaymentTerminalSettings = z.infer<typeof paymentTerminalSettingsSchema>;
+export type UpdatePaymentTerminalSettingsInput = z.infer<
+  typeof updatePaymentTerminalSettingsInputSchema
+>;
 export type OperationResult = z.infer<typeof operationResultSchema>;
 export type BackupKind = z.infer<typeof backupKindSchema>;
 export type BackupRecord = z.infer<typeof backupRecordSchema>;
@@ -202,6 +219,10 @@ export interface GtrzDesktopApi {
   };
   readonly settings: {
     changeProductionPassword(input: ChangeProductionPasswordInput): Promise<OperationResult>;
+    getPaymentTerminal(): Promise<PaymentTerminalSettings>;
+    updatePaymentTerminal(
+      input: UpdatePaymentTerminalSettingsInput,
+    ): Promise<PaymentTerminalSettings>;
   };
   readonly backups: {
     getState(): Promise<BackupState>;
