@@ -83,9 +83,7 @@ export function SettingsPage(): React.JSX.Element {
     }
   }
 
-  async function handleTerminalSubmit(
-    formEvent: SyntheticEvent<HTMLFormElement>,
-  ): Promise<void> {
+  async function handleTerminalSubmit(formEvent: SyntheticEvent<HTMLFormElement>): Promise<void> {
     formEvent.preventDefault();
     setTerminalSubmitting(true);
     setTerminalMessage(null);
