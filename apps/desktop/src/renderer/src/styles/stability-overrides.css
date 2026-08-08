@@ -1,0 +1,26 @@
+.sidebar,
+.sidebar-nav,
+.sidebar-link,
+.event-context,
+.profile-card,
+.profile-card > div {
+  min-width: 0;
+}
+
+.sidebar,
+.sidebar-nav {
+  overflow-x: hidden;
+}
+
+.sidebar-link {
+  max-width: 100%;
+}
+
+.sidebar-link > span,
+.event-context strong,
+.event-context small,
+.profile-card strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
