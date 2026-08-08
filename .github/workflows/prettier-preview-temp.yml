@@ -1,9 +1,9 @@
 name: Prettier preview temporário
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/operacao-vouchers-despesas-auditoria
+      - main
 
 permissions:
   contents: read
