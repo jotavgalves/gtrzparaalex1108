@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./payment-terminal": {
+      "types": "./src/payment-terminal.ts",
+      "default": "./src/payment-terminal.ts"
+    },
     "./schema": {
       "types": "./src/schema.ts",
       "default": "./src/schema.ts"
