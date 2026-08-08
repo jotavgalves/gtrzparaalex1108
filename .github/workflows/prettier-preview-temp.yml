@@ -1,0 +1,27 @@
+name: Prettier preview temporário
+
+on:
+  push:
+    branches:
+      - feat/operacao-vouchers-despesas-auditoria
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.23.1'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx prettier --write tests/e2e/stability-regressions.spec.ts
+      - name: Mostrar arquivo formatado
+        shell: bash
+        run: |
+          echo '---BEGIN_FORMATTED---'
+          cat tests/e2e/stability-regressions.spec.ts
+          echo '---END_FORMATTED---'
