@@ -72,9 +72,9 @@ describe('database foundation', () => {
       .prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
       .run(11, 'intermediate-build-v11', Date.now());
 
-    const voucherColumns = database.sqlite.prepare('PRAGMA table_info(vouchers)').all() as Array<{
+    const voucherColumns = database.sqlite.prepare('PRAGMA table_info(vouchers)').all() as {
       name: string;
-    }>;
+    }[];
     expect(voucherColumns.some((column) => column.name === 'service_point_id')).toBe(false);
     database.close();
 
