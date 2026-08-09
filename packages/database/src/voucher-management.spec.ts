@@ -146,10 +146,12 @@ describe('voucher management', () => {
       servicePointId: table.id,
     });
 
-    expect(deleteManagedVoucher(database, { voucherId: voucher.id, reason: 'Cadastro errado' })).toEqual(
-      { mode: 'deleted' },
-    );
-    expect(database.sqlite.prepare('SELECT id FROM vouchers WHERE id = ?').get(voucher.id)).toBeUndefined();
+    expect(
+      deleteManagedVoucher(database, { voucherId: voucher.id, reason: 'Cadastro errado' }),
+    ).toEqual({ mode: 'deleted' });
+    expect(
+      database.sqlite.prepare('SELECT id FROM vouchers WHERE id = ?').get(voucher.id),
+    ).toBeUndefined();
     expect(getManagedVoucherState(database).vouchers).toHaveLength(0);
     database.close();
   });

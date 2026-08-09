@@ -24,7 +24,10 @@ function bindingKey(voucherId: string): string {
   return `voucher.service-point:${voucherId}`;
 }
 
-function getServicePoint(database: DatabaseContext, servicePointId: string): ServicePointRow | null {
+function getServicePoint(
+  database: DatabaseContext,
+  servicePointId: string,
+): ServicePointRow | null {
   const row = database.sqlite
     .prepare(
       `SELECT id, event_id, label, type, active
@@ -134,7 +137,9 @@ export function requireVoucherServicePointForOrder(
   }
 
   if (!binding.active) {
-    throw new Error('A mesa original deste voucher foi excluída. Reassocie o voucher antes de usá-lo.');
+    throw new Error(
+      'A mesa original deste voucher foi excluída. Reassocie o voucher antes de usá-lo.',
+    );
   }
 
   if (binding.servicePointId !== input.servicePointId) {

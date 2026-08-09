@@ -99,7 +99,10 @@ function requireVoucher(database: DatabaseContext, voucherId: string): DatabaseV
   return voucher;
 }
 
-function enrichVoucher(database: DatabaseContext, voucher: DatabaseVoucher): DatabaseManagedVoucher {
+function enrichVoucher(
+  database: DatabaseContext,
+  voucher: DatabaseVoucher,
+): DatabaseManagedVoucher {
   const binding = getVoucherServicePointBinding(database, voucher.id);
   return {
     ...voucher,
@@ -119,8 +122,7 @@ export function getManagedVoucherState(database: DatabaseContext): DatabaseManag
     activeEventId,
     vouchers: vouchers.filter((voucher) => voucher.deletedAt === null),
     deletedVouchers: vouchers.filter((voucher) => voucher.deletedAt !== null),
-    servicePoints:
-      activeEventId === null ? [] : listVoucherServicePoints(database, activeEventId),
+    servicePoints: activeEventId === null ? [] : listVoucherServicePoints(database, activeEventId),
     transactions: state.transactions,
   };
 }

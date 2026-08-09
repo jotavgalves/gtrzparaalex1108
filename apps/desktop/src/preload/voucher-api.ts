@@ -50,10 +50,7 @@ export const voucherApi: VoucherApi = {
 
   async addBalance(input: AddVoucherBalanceInput): Promise<Voucher> {
     const parsedInput = addVoucherBalanceInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
-      IPC_CHANNELS.vouchersAddBalance,
-      parsedInput,
-    );
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.vouchersAddBalance, parsedInput);
     return voucherSchema.parse(payload);
   },
 

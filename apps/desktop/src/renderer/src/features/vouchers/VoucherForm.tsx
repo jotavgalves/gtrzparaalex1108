@@ -36,8 +36,7 @@ export function VoucherForm({
           initialBalanceCents,
           servicePointId,
         };
-        const input =
-          normalizedCode.length === 0 ? base : { ...base, code: normalizedCode };
+        const input = normalizedCode.length === 0 ? base : { ...base, code: normalizedCode };
 
         void onSubmit(input).then(() => {
           setLabel('');
@@ -116,10 +115,7 @@ export function VoucherForm({
       <button
         className="button"
         disabled={
-          busy ||
-          servicePointId.length === 0 ||
-          label.trim().length < 2 ||
-          parseMoney(balance) <= 0
+          busy || servicePointId.length === 0 || label.trim().length < 2 || parseMoney(balance) <= 0
         }
         type="submit"
       >
