@@ -99,7 +99,9 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
       Object.assign(productInput, { fallbackIcon: input.fallbackIcon });
     }
 
-    return inventoryProductSchema.parse(updateInventoryProduct(options.getDatabase(), productInput));
+    return inventoryProductSchema.parse(
+      updateInventoryProduct(options.getDatabase(), productInput),
+    );
   });
   ipcMain.handle(IPC_CHANNELS.inventoryRecordMovement, (_event, payload: unknown) => {
     const input = recordStockMovementInputSchema.parse(payload);
