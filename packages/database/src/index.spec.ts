@@ -9,8 +9,10 @@ import {
   changeProductionPassword,
   createDatabaseSnapshot,
   createEvent,
+  createVoucher,
   ensureControlDefaults,
   getSessionState,
+  getVoucherState,
   listEvents,
   openDatabase,
   switchProfile,
@@ -56,6 +58,38 @@ describe('database foundation', () => {
     expect(eventTable).toBeDefined();
     expect(auditTable).toBeDefined();
     database.close();
+  });
+
+  it('tolera banco intermediário com migração 11 sem service_point_id', async () => {
+    const database = await createTemporaryDatabase();
+    const created = createEvent(database, {
+      name: 'Evento banco existente',
+      startsAt: Date.now(),
+    });
+    const databasePath = database.filePath;
+
+    database.sqlite
+      .prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)')
+      .run(11, 'intermediate-build-v11', Date.now());
+
+    const voucherColumns = database.sqlite.prepare('PRAGMA table_info(vouchers)').all() as {
+      name: string;
+    }[];
+    expect(voucherColumns.some((column) => column.name === 'service_point_id')).toBe(false);
+    database.close();
+
+    const reopened = openDatabase(databasePath);
+    ensureControlDefaults(reopened);
+    expect(getSessionState(reopened).activeEvent?.id).toBe(created.id);
+    expect(getVoucherState(reopened).activeEventId).toBe(created.id);
+    expect(
+      createVoucher(reopened, {
+        code: 'COMPAT-11',
+        label: 'Voucher compatível',
+        initialBalanceCents: 1_000,
+      }),
+    ).toMatchObject({ code: 'COMPAT-11', remainingBalanceCents: 1_000 });
+    reopened.close();
   });
 
   it('cria o primeiro evento e o seleciona automaticamente', async () => {

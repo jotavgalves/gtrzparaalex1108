@@ -10,12 +10,14 @@ import {
   eventSchema,
   IPC_CHANNELS,
   operationResultSchema,
+  paymentTerminalSettingsSchema,
   renameEventInputSchema,
   restoreBackupResultSchema,
   sessionStateSchema,
   setActiveEventInputSchema,
   switchProfileInputSchema,
   systemInfoSchema,
+  updatePaymentTerminalSettingsInputSchema,
   verifyBackupInputSchema,
   type SystemInfo,
 } from '@gtrz/contracts';
@@ -30,6 +32,10 @@ import {
   switchProfile,
   type DatabaseContext,
 } from '@gtrz/database';
+import {
+  getPaymentTerminalSettings,
+  updatePaymentTerminalSettings,
+} from '@gtrz/database/payment-terminal';
 
 import type { BackupService } from './backup-service';
 import { registerComboIpcHandlers } from './register-combo-ipc';
@@ -57,6 +63,8 @@ const CONTROL_CHANNELS = [
   IPC_CHANNELS.sessionGetState,
   IPC_CHANNELS.sessionSwitchProfile,
   IPC_CHANNELS.settingsChangeProductionPassword,
+  IPC_CHANNELS.settingsGetPaymentTerminal,
+  IPC_CHANNELS.settingsUpdatePaymentTerminal,
   IPC_CHANNELS.backupsGetState,
   IPC_CHANNELS.backupsChooseDestination,
   IPC_CHANNELS.backupsCreateManual,
@@ -126,6 +134,17 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     const input = changeProductionPasswordInputSchema.parse(payload);
     changeProductionPassword(options.getDatabase(), input.currentPassword, input.newPassword);
     return operationResultSchema.parse({ success: true });
+  });
+
+  ipcMain.handle(IPC_CHANNELS.settingsGetPaymentTerminal, () => {
+    return paymentTerminalSettingsSchema.parse(getPaymentTerminalSettings(options.getDatabase()));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.settingsUpdatePaymentTerminal, (_event, payload: unknown) => {
+    const input = updatePaymentTerminalSettingsInputSchema.parse(payload);
+    return paymentTerminalSettingsSchema.parse(
+      updatePaymentTerminalSettings(options.getDatabase(), input),
+    );
   });
 
   ipcMain.handle(IPC_CHANNELS.backupsGetState, async () => {

@@ -10,12 +10,14 @@ import {
   eventSchema,
   IPC_CHANNELS,
   operationResultSchema,
+  paymentTerminalSettingsSchema,
   renameEventInputSchema,
   restoreBackupResultSchema,
   sessionStateSchema,
   setActiveEventInputSchema,
   switchProfileInputSchema,
   systemInfoSchema,
+  updatePaymentTerminalSettingsInputSchema,
   verifyBackupInputSchema,
   type BackupRecord,
   type BackupState,
@@ -25,12 +27,14 @@ import {
   type GtrzDesktopApi,
   type GtrzEvent,
   type OperationResult,
+  type PaymentTerminalSettings,
   type RenameEventInput,
   type RestoreBackupResult,
   type SessionState,
   type SetActiveEventInput,
   type SwitchProfileInput,
   type SystemInfo,
+  type UpdatePaymentTerminalSettingsInput,
   type VerifyBackupInput,
 } from '@gtrz/contracts';
 
@@ -104,6 +108,20 @@ const api: GtrzDesktopApi = {
         parsedInput,
       );
       return operationResultSchema.parse(payload);
+    },
+    async getPaymentTerminal(): Promise<PaymentTerminalSettings> {
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.settingsGetPaymentTerminal);
+      return paymentTerminalSettingsSchema.parse(payload);
+    },
+    async updatePaymentTerminal(
+      input: UpdatePaymentTerminalSettingsInput,
+    ): Promise<PaymentTerminalSettings> {
+      const parsedInput = updatePaymentTerminalSettingsInputSchema.parse(input);
+      const payload: unknown = await ipcRenderer.invoke(
+        IPC_CHANNELS.settingsUpdatePaymentTerminal,
+        parsedInput,
+      );
+      return paymentTerminalSettingsSchema.parse(payload);
     },
   },
   backups: {
