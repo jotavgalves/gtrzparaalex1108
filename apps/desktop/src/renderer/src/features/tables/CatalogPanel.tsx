@@ -41,14 +41,18 @@ export function CatalogPanel({ items, busy, onAdd }: CatalogPanelProps): React.J
           <Search size={16} aria-hidden="true" />
           <input
             aria-label="Buscar produto ou combo"
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+            }}
             placeholder="Buscar item"
             value={search}
           />
         </label>
         <select
           aria-label="Filtrar catálogo"
-          onChange={(event) => setKind(event.target.value as OrderItemKind | 'all')}
+          onChange={(event) => {
+            setKind(event.target.value as OrderItemKind | 'all');
+          }}
           value={kind}
         >
           <option value="all">Todos</option>
