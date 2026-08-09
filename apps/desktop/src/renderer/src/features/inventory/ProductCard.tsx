@@ -60,7 +60,9 @@ export function ProductCard({
         <ProductForm
           busy={busy}
           categories={categories}
-          onCancel={() => setMode('view')}
+          onCancel={() => {
+            setMode('view');
+          }}
           onSubmit={async (input) => {
             await onUpdate(input);
             setMode('view');
@@ -76,7 +78,9 @@ export function ProductCard({
         <StockMovementForm
           busy={busy}
           intent={mode}
-          onCancel={() => setMode('view')}
+          onCancel={() => {
+            setMode('view');
+          }}
           onSubmit={onMovement}
           product={product}
         />
@@ -121,7 +125,9 @@ export function ProductCard({
           <span>Motivo da exclusão</span>
           <input
             maxLength={240}
-            onChange={(event) => setDeleteReason(event.target.value)}
+            onChange={(event) => {
+              setDeleteReason(event.target.value);
+            }}
             placeholder="Ex.: produto cadastrado incorretamente"
             value={deleteReason}
           />
@@ -137,11 +143,11 @@ export function ProductCard({
                 productId: product.id,
                 mode: 'keep-sales-history',
                 reason: deleteReason.trim(),
-              }).catch((error: unknown) =>
+              }).catch((error: unknown) => {
                 setDeleteError(
                   error instanceof Error ? error.message : 'Não foi possível excluir.',
-                ),
-              );
+                );
+              });
             }}
             type="button"
           >
@@ -161,11 +167,11 @@ export function ProductCard({
                 productId: product.id,
                 mode: 'refund-active-event-sales',
                 reason: deleteReason.trim(),
-              }).catch((error: unknown) =>
+              }).catch((error: unknown) => {
                 setDeleteError(
                   error instanceof Error ? error.message : 'Não foi possível excluir.',
-                ),
-              );
+                );
+              });
             }}
             type="button"
           >
@@ -257,7 +263,9 @@ export function ProductCard({
             <button
               className="button button--ghost button--compact"
               disabled={busy}
-              onClick={() => setMode('edit')}
+              onClick={() => {
+                setMode('edit');
+              }}
               type="button"
             >
               <Pencil size={15} aria-hidden="true" />
@@ -266,7 +274,9 @@ export function ProductCard({
             <button
               className="button button--secondary button--compact"
               disabled={busy || !hasActiveEvent}
-              onClick={() => setMode('entry')}
+              onClick={() => {
+                setMode('entry');
+              }}
               type="button"
             >
               <ArrowDownToLine size={15} aria-hidden="true" />
@@ -275,7 +285,9 @@ export function ProductCard({
             <button
               className="button button--secondary button--compact"
               disabled={busy || !hasActiveEvent || product.quantity === 0}
-              onClick={() => setMode('decrease')}
+              onClick={() => {
+                setMode('decrease');
+              }}
               type="button"
             >
               <ArrowUpFromLine size={15} aria-hidden="true" />
@@ -290,13 +302,13 @@ export function ProductCard({
                 setImpact(null);
                 void onPreviewDeletion(product.id)
                   .then(setImpact)
-                  .catch((error: unknown) =>
+                  .catch((error: unknown) => {
                     setDeleteError(
                       error instanceof Error
                         ? error.message
                         : 'Não foi possível calcular o impacto.',
-                    ),
-                  );
+                    );
+                  });
               }}
               type="button"
             >
