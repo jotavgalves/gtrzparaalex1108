@@ -96,6 +96,16 @@ export const cancelExpenseInputSchema = z.object({
   reason: z.string().trim().min(3).max(240),
 });
 
+export const deleteExpenseInputSchema = z.object({
+  expenseId: z.uuid(),
+  reason: z.string().trim().min(3).max(240),
+});
+
+export const expenseDeletionResultSchema = z.object({
+  expenseId: z.uuid(),
+  deleted: z.literal(true),
+});
+
 export type CashRegisterStatus = z.infer<typeof cashRegisterStatusSchema>;
 export type CashMovementType = z.infer<typeof cashMovementTypeSchema>;
 export type CashRegister = z.infer<typeof cashRegisterSchema>;
@@ -110,6 +120,8 @@ export type Expense = z.infer<typeof expenseSchema>;
 export type ExpenseState = z.infer<typeof expenseStateSchema>;
 export type CreateExpenseInput = z.infer<typeof createExpenseInputSchema>;
 export type CancelExpenseInput = z.infer<typeof cancelExpenseInputSchema>;
+export type DeleteExpenseInput = z.infer<typeof deleteExpenseInputSchema>;
+export type ExpenseDeletionResult = z.infer<typeof expenseDeletionResultSchema>;
 
 export interface CashApi {
   getState(): Promise<CashState>;
@@ -122,4 +134,5 @@ export interface ExpenseApi {
   getState(): Promise<ExpenseState>;
   create(input: CreateExpenseInput): Promise<Expense>;
   cancel(input: CancelExpenseInput): Promise<Expense>;
+  delete(input: DeleteExpenseInput): Promise<ExpenseDeletionResult>;
 }

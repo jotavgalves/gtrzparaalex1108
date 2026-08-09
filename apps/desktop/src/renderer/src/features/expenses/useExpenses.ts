@@ -11,6 +11,7 @@ interface ExpenseViewState {
   readonly reload: () => Promise<void>;
   readonly createExpense: (input: CreateExpenseInput) => Promise<void>;
   readonly cancelExpense: (expenseId: string, reason: string) => Promise<void>;
+  readonly deleteExpense: (expenseId: string, reason: string) => Promise<void>;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -74,5 +75,25 @@ export function useExpenses(): ExpenseViewState {
     [run],
   );
 
-  return { state, loading, busy, error, message, reload, createExpense, cancelExpense };
+  const deleteExpense = useCallback(
+    async (expenseId: string, reason: string): Promise<void> => {
+      await run(
+        () => window.gtrz.expenses.delete({ expenseId, reason }),
+        'Despesa excluída definitivamente.',
+      );
+    },
+    [run],
+  );
+
+  return {
+    state,
+    loading,
+    busy,
+    error,
+    message,
+    reload,
+    createExpense,
+    cancelExpense,
+    deleteExpense,
+  };
 }

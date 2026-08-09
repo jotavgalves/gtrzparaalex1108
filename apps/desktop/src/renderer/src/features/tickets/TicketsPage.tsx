@@ -25,6 +25,7 @@ export function TicketsPage(): React.JSX.Element {
     updateLot,
     createSale,
     cancelSale,
+    deleteSale,
   } = useTickets();
   const lots = state?.lots ?? [];
   const sales = state?.sales ?? [];
@@ -45,7 +46,10 @@ export function TicketsPage(): React.JSX.Element {
         <div>
           <span className="eyebrow">Lotes, códigos e receita integrados</span>
           <h1>Ingressos</h1>
-          <p>Controle capacidade, vendas em grupo, cortesias e códigos individuais por evento.</p>
+          <p>
+            Cancelar preserva o registro. Excluir desfaz a venda quando necessário e remove seus
+            códigos definitivamente.
+          </p>
         </div>
         <button
           className="button button--secondary"
@@ -111,7 +115,7 @@ export function TicketsPage(): React.JSX.Element {
               <Ticket size={20} aria-hidden="true" />
               <div>
                 <h2>Vendas e cortesias</h2>
-                <p>Cancelar invalida os códigos e devolve a capacidade do lote.</p>
+                <p>Use Gerenciar para cancelar ou excluir definitivamente.</p>
               </div>
             </div>
             {loading ? <div className="route-state">Carregando ingressos…</div> : null}
@@ -124,7 +128,13 @@ export function TicketsPage(): React.JSX.Element {
             ) : null}
             <div className="ticket-sale-list">
               {sales.map((sale) => (
-                <TicketSaleCard busy={busy} key={sale.id} onCancel={cancelSale} sale={sale} />
+                <TicketSaleCard
+                  busy={busy}
+                  key={sale.id}
+                  onCancel={cancelSale}
+                  onDelete={deleteSale}
+                  sale={sale}
+                />
               ))}
             </div>
           </article>

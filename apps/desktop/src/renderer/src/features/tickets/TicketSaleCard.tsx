@@ -1,4 +1,4 @@
-import { Ban, Copy, Gift, TicketCheck } from 'lucide-react';
+import { Ban, Copy, Gift, Settings2, TicketCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import type { TicketSale } from '@gtrz/contracts';
@@ -7,6 +7,7 @@ interface TicketSaleCardProps {
   readonly sale: TicketSale;
   readonly busy: boolean;
   readonly onCancel: (saleId: string, reason: string) => Promise<void>;
+  readonly onDelete: (saleId: string, reason: string) => Promise<void>;
 }
 
 const SOURCE_LABELS = {
@@ -23,8 +24,14 @@ function formatMoney(cents: number): string {
   }).format(cents / 100);
 }
 
-export function TicketSaleCard({ sale, busy, onCancel }: TicketSaleCardProps): React.JSX.Element {
+export function TicketSaleCard({
+  sale,
+  busy,
+  onCancel,
+  onDelete,
+}: TicketSaleCardProps): React.JSX.Element {
   const [reason, setReason] = useState('');
+  const [managing, setManaging] = useState(false);
 
   return (
     <article className="ticket-sale-card">
@@ -85,24 +92,22 @@ export function TicketSaleCard({ sale, busy, onCancel }: TicketSaleCardProps): R
         ))}
       </div>
 
-      {sale.status === 'active' ? (
-        <form
-          className="ticket-sale-cancel"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const normalizedReason = reason.trim();
+      <button
+        className="button button--ghost button--compact"
+        disabled={busy}
+        onClick={() => {
+          setManaging((value) => !value);
+        }}
+        type="button"
+      >
+        <Settings2 size={15} aria-hidden="true" />
+        Gerenciar
+      </button>
 
-            if (normalizedReason.length < 3) {
-              return;
-            }
-
-            void onCancel(sale.id, normalizedReason).then(() => {
-              setReason('');
-            });
-          }}
-        >
+      {managing ? (
+        <div className="ticket-sale-manage">
           <label className="form-field">
-            <span>Motivo do cancelamento</span>
+            <span>Motivo</span>
             <input
               disabled={busy}
               maxLength={240}
@@ -113,15 +118,43 @@ export function TicketSaleCard({ sale, busy, onCancel }: TicketSaleCardProps): R
               value={reason}
             />
           </label>
-          <button
-            className="button button--ghost button--compact"
-            disabled={busy || reason.trim().length < 3}
-            type="submit"
-          >
-            <Ban size={15} aria-hidden="true" />
-            Cancelar venda
-          </button>
-        </form>
+          <div className="ticket-sale-manage__actions">
+            {sale.status === 'active' ? (
+              <button
+                className="button button--ghost button--compact"
+                disabled={busy || reason.trim().length < 3}
+                onClick={() => {
+                  void onCancel(sale.id, reason.trim()).then(() => {
+                    setReason('');
+                    setManaging(false);
+                  });
+                }}
+                type="button"
+              >
+                <Ban size={15} aria-hidden="true" />
+                Somente cancelar
+              </button>
+            ) : null}
+            <button
+              className="button button--danger button--compact"
+              disabled={busy || reason.trim().length < 3}
+              onClick={() => {
+                void onDelete(sale.id, reason.trim()).then(() => {
+                  setReason('');
+                  setManaging(false);
+                });
+              }}
+              type="button"
+            >
+              <Trash2 size={15} aria-hidden="true" />
+              Excluir definitivamente
+            </button>
+          </div>
+          <small>
+            Se a venda ainda estiver ativa, a exclusão primeiro cancela a venda, devolve capacidade
+            e receita e só depois remove a venda e seus códigos.
+          </small>
+        </div>
       ) : null}
     </article>
   );

@@ -213,3 +213,42 @@ export function cancelExpense(
 
   return mapExpense(requireExpense(database, expense.id));
 }
+
+export function deleteExpense(
+  database: DatabaseContext,
+  input: { readonly expenseId: string; readonly reason: string },
+): { readonly expenseId: string; readonly deleted: true } {
+  requireProduction(database);
+  const eventId = requireActiveEvent(database);
+  const expense = requireExpense(database, input.expenseId);
+
+  if (expense.event_id !== eventId) {
+    throw new Error('A despesa não pertence ao evento ativo.');
+  }
+
+  const reason = input.reason.trim();
+  if (reason.length < 3) {
+    throw new Error('Informe o motivo da exclusão da despesa.');
+  }
+
+  database.sqlite.transaction(() => {
+    appendAudit(database, {
+      action: 'expense.deleted',
+      entityType: 'expense',
+      entityId: expense.id,
+      eventId,
+      details: {
+        amountCents: expense.amount_cents,
+        category: expense.category,
+        description: expense.description,
+        note: expense.note,
+        paymentMethod: expense.payment_method,
+        previousStatus: expense.status,
+        reason,
+      },
+    });
+    database.sqlite.prepare('DELETE FROM expenses WHERE id = ?').run(expense.id);
+  })();
+
+  return { expenseId: expense.id, deleted: true };
+}

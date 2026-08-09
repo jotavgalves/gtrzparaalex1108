@@ -8,7 +8,7 @@ import {
 
 const actionTimeout = 5_000;
 
-test('SMK-TKT-001 — vende grupo, gera códigos e cancela com reflexo no caixa', async () => {
+test('SMK-TKT-001 — vende grupo, gera códigos e exclui com cancelamento automático', async () => {
   test.setTimeout(60_000);
   const electronApplication = await launchElectronApplication();
 
@@ -76,17 +76,18 @@ test('SMK-TKT-001 — vende grupo, gera códigos e cancela com reflexo no caixa'
     const activeSaleCard = window
       .locator('article.ticket-sale-card')
       .filter({ hasText: attendeeName });
-    await activeSaleCard.getByPlaceholder('Ex.: venda duplicada').fill('Venda duplicada');
-    const cancelSaleButton = activeSaleCard.getByRole('button', {
-      name: 'Cancelar venda',
+    await activeSaleCard.getByRole('button', { name: 'Gerenciar', exact: true }).click();
+    await activeSaleCard.getByPlaceholder('Ex.: venda duplicada').fill('Venda cadastrada errada');
+    const deleteSaleButton = activeSaleCard.getByRole('button', {
+      name: 'Excluir definitivamente',
       exact: true,
     });
-    await expect(cancelSaleButton).toBeEnabled({ timeout: actionTimeout });
-    await cancelSaleButton.click({ timeout: actionTimeout });
-    await expect(window.getByText('Venda cancelada.')).toBeVisible({
+    await expect(deleteSaleButton).toBeEnabled({ timeout: actionTimeout });
+    await deleteSaleButton.click({ timeout: actionTimeout });
+    await expect(window.getByText('Venda e códigos excluídos definitivamente.')).toBeVisible({
       timeout: actionTimeout,
     });
-    await expect(activeSaleCard).toContainText('Cancelada');
+    await expect(activeSaleCard).toHaveCount(0);
     await expect(
       window.locator('article.ticket-lot-card').filter({ hasText: lotName }),
     ).toContainText('3');

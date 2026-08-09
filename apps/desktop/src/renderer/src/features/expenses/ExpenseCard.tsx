@@ -1,4 +1,4 @@
-import { Ban, CreditCard, WalletCards } from 'lucide-react';
+import { Ban, CreditCard, Settings2, Trash2, WalletCards } from 'lucide-react';
 import { useState } from 'react';
 
 import type { Expense } from '@gtrz/contracts';
@@ -7,6 +7,7 @@ interface ExpenseCardProps {
   readonly expense: Expense;
   readonly busy: boolean;
   readonly onCancel: (expenseId: string, reason: string) => Promise<void>;
+  readonly onDelete: (expenseId: string, reason: string) => Promise<void>;
 }
 
 const PAYMENT_LABELS = {
@@ -23,11 +24,17 @@ function formatMoney(cents: number): string {
   }).format(cents / 100);
 }
 
-export function ExpenseCard({ expense, busy, onCancel }: ExpenseCardProps): React.JSX.Element {
+export function ExpenseCard({
+  expense,
+  busy,
+  onCancel,
+  onDelete,
+}: ExpenseCardProps): React.JSX.Element {
   const [reason, setReason] = useState('');
+  const [managing, setManaging] = useState(false);
 
   return (
-    <article className="expense-card">
+    <article className="expense-card expense-card--compact">
       <header className="expense-card__header">
         <span>
           <strong>{expense.description}</strong>
@@ -58,24 +65,22 @@ export function ExpenseCard({ expense, busy, onCancel }: ExpenseCardProps): Reac
 
       {expense.note === null ? null : <p>{expense.note}</p>}
 
-      {expense.status === 'active' ? (
-        <form
-          className="expense-cancel-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const normalizedReason = reason.trim();
+      <button
+        className="button button--ghost button--compact"
+        disabled={busy}
+        onClick={() => {
+          setManaging((value) => !value);
+        }}
+        type="button"
+      >
+        <Settings2 size={15} aria-hidden="true" />
+        Gerenciar
+      </button>
 
-            if (normalizedReason.length < 3) {
-              return;
-            }
-
-            void onCancel(expense.id, normalizedReason).then(() => {
-              setReason('');
-            });
-          }}
-        >
+      {managing ? (
+        <div className="expense-manage-drawer">
           <label className="form-field">
-            <span>Motivo do cancelamento</span>
+            <span>Motivo</span>
             <input
               disabled={busy}
               maxLength={240}
@@ -86,15 +91,42 @@ export function ExpenseCard({ expense, busy, onCancel }: ExpenseCardProps): Reac
               value={reason}
             />
           </label>
-          <button
-            className="button button--ghost button--compact"
-            disabled={busy || reason.trim().length < 3}
-            type="submit"
-          >
-            <Ban size={15} aria-hidden="true" />
-            Cancelar despesa
-          </button>
-        </form>
+          <div className="expense-manage-drawer__actions">
+            {expense.status === 'active' ? (
+              <button
+                className="button button--ghost button--compact"
+                disabled={busy || reason.trim().length < 3}
+                onClick={() => {
+                  void onCancel(expense.id, reason.trim()).then(() => {
+                    setReason('');
+                    setManaging(false);
+                  });
+                }}
+                type="button"
+              >
+                <Ban size={15} aria-hidden="true" />
+                Somente cancelar
+              </button>
+            ) : null}
+            <button
+              className="button button--danger button--compact"
+              disabled={busy || reason.trim().length < 3}
+              onClick={() => {
+                void onDelete(expense.id, reason.trim()).then(() => {
+                  setReason('');
+                  setManaging(false);
+                });
+              }}
+              type="button"
+            >
+              <Trash2 size={15} aria-hidden="true" />
+              Excluir definitivamente
+            </button>
+          </div>
+          <small>
+            A exclusão remove o lançamento. A auditoria da exclusão permanece registrada.
+          </small>
+        </div>
       ) : null}
     </article>
   );

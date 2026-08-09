@@ -72,11 +72,13 @@ export const IPC_CHANNELS = {
   expensesGetState: 'expenses:get-state',
   expensesCreate: 'expenses:create',
   expensesCancel: 'expenses:cancel',
+  expensesDelete: 'expenses:delete',
   ticketsGetState: 'tickets:get-state',
   ticketsCreateLot: 'tickets:create-lot',
   ticketsUpdateLot: 'tickets:update-lot',
   ticketsCreateSale: 'tickets:create-sale',
   ticketsCancelSale: 'tickets:cancel-sale',
+  ticketsDeleteSale: 'tickets:delete-sale',
 } as const;
 
 export const systemInfoSchema = z.object({
