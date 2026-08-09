@@ -13,8 +13,8 @@ import {
   createEvent,
   createInventoryProduct,
   createProductCategory,
+  createServicePoint,
   createVoucher,
-  getOperationState,
   getOrder,
   getVoucherState,
   openDatabase,
@@ -23,6 +23,7 @@ import {
   switchProfile,
   type DatabaseContext,
 } from './index';
+import { createManagedVoucher } from './voucher-management';
 
 let temporaryDirectory: string | null = null;
 
@@ -52,14 +53,16 @@ function seedProduct(database: DatabaseContext): string {
   return product.id;
 }
 
-function openProductOrder(database: DatabaseContext, productId: string): string {
-  const counter = getOperationState(database).servicePoints[0];
+function createVoucherTable(database: DatabaseContext, label: string): string {
+  return createServicePoint(database, { label, type: 'table' }).id;
+}
 
-  if (counter === undefined) {
-    throw new Error('Balcão não criado.');
-  }
-
-  const order = openOrder(database, counter.id);
+function openProductOrder(
+  database: DatabaseContext,
+  productId: string,
+  servicePointId: string,
+): string {
+  const order = openOrder(database, servicePointId);
   return addOrderItem(database, {
     orderId: order.id,
     itemKind: 'product',
@@ -106,12 +109,14 @@ describe('vouchers database', () => {
     const database = await createTemporaryDatabase();
     const event = createEvent(database, { name: 'Evento misto', startsAt: Date.now() });
     const productId = seedProduct(database);
-    const voucher = createVoucher(database, {
+    const tableId = createVoucherTable(database, 'Mesa Misto');
+    const voucher = createManagedVoucher(database, {
       code: 'MISTO-01',
       label: 'Crédito parcial',
       initialBalanceCents: 700,
+      servicePointId: tableId,
     });
-    const orderId = openProductOrder(database, productId);
+    const orderId = openProductOrder(database, productId, tableId);
     bindOrderVoucher(database, { orderId, code: voucher.code });
     const paidOrder = closeOrder(database, {
       orderId,
@@ -139,12 +144,14 @@ describe('vouchers database', () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento restituição', startsAt: Date.now() });
     const productId = seedProduct(database);
-    const voucher = createVoucher(database, {
+    const tableId = createVoucherTable(database, 'Mesa Restituição');
+    const voucher = createManagedVoucher(database, {
       code: 'REFUND-01',
       label: 'Crédito restituível',
       initialBalanceCents: 1000,
+      servicePointId: tableId,
     });
-    const orderId = openProductOrder(database, productId);
+    const orderId = openProductOrder(database, productId, tableId);
     bindOrderVoucher(database, { orderId, code: voucher.code });
     closeOrder(database, {
       orderId,
@@ -172,12 +179,14 @@ describe('vouchers database', () => {
     const database = await createTemporaryDatabase();
     const event = createEvent(database, { name: 'Evento rollback voucher', startsAt: Date.now() });
     const productId = seedProduct(database);
-    const voucher = createVoucher(database, {
+    const tableId = createVoucherTable(database, 'Mesa Curto');
+    const voucher = createManagedVoucher(database, {
       code: 'CURTO-01',
       label: 'Saldo curto',
       initialBalanceCents: 200,
+      servicePointId: tableId,
     });
-    const orderId = openProductOrder(database, productId);
+    const orderId = openProductOrder(database, productId, tableId);
     bindOrderVoucher(database, { orderId, code: voucher.code });
 
     expect(() =>
