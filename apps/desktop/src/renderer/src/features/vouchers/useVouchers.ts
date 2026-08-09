@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { CreateVoucherInput, VoucherState } from '@gtrz/contracts';
+import type {
+  AddVoucherBalanceInput,
+  CreateVoucherInput,
+  DeleteVoucherInput,
+  UpdateVoucherInput,
+  VoucherState,
+} from '@gtrz/contracts';
 
 interface VoucherViewState {
   readonly state: VoucherState | null;
@@ -11,6 +17,9 @@ interface VoucherViewState {
   readonly reload: () => Promise<void>;
   readonly createVoucher: (input: CreateVoucherInput) => Promise<void>;
   readonly changeStatus: (voucherId: string, status: 'active' | 'cancelled') => Promise<void>;
+  readonly updateVoucher: (input: UpdateVoucherInput) => Promise<void>;
+  readonly addBalance: (input: AddVoucherBalanceInput) => Promise<void>;
+  readonly deleteVoucher: (input: DeleteVoucherInput) => Promise<void>;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -53,6 +62,7 @@ export function useVouchers(): VoucherViewState {
         setMessage(successMessage);
       } catch (operationError: unknown) {
         setError(getErrorMessage(operationError));
+        throw operationError;
       } finally {
         setBusy(false);
       }
@@ -62,7 +72,7 @@ export function useVouchers(): VoucherViewState {
 
   const createVoucher = useCallback(
     async (input: CreateVoucherInput): Promise<void> => {
-      await run(() => window.gtrz.vouchers.create(input), 'Voucher emitido.');
+      await run(() => window.gtrz.vouchers.create(input), 'Voucher emitido e vinculado à mesa.');
     },
     [run],
   );
@@ -77,5 +87,41 @@ export function useVouchers(): VoucherViewState {
     [run],
   );
 
-  return { state, loading, busy, error, message, reload, createVoucher, changeStatus };
+  const updateVoucher = useCallback(
+    async (input: UpdateVoucherInput): Promise<void> => {
+      await run(() => window.gtrz.vouchers.update(input), 'Voucher atualizado.');
+    },
+    [run],
+  );
+
+  const addBalance = useCallback(
+    async (input: AddVoucherBalanceInput): Promise<void> => {
+      await run(() => window.gtrz.vouchers.addBalance(input), 'Saldo adicionado ao voucher.');
+    },
+    [run],
+  );
+
+  const deleteVoucher = useCallback(
+    async (input: DeleteVoucherInput): Promise<void> => {
+      await run(async () => {
+        const result = await window.gtrz.vouchers.delete(input);
+        return result;
+      }, 'Voucher excluído com segurança.');
+    },
+    [run],
+  );
+
+  return {
+    state,
+    loading,
+    busy,
+    error,
+    message,
+    reload,
+    createVoucher,
+    changeStatus,
+    updateVoucher,
+    addBalance,
+    deleteVoucher,
+  };
 }
