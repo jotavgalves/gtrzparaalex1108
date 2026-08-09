@@ -10,7 +10,8 @@ import type {
   UpdateProductInput,
 } from '@gtrz/contracts';
 
-import { PRODUCT_ICON_OPTIONS, ProductVisual } from '../../shared/product/ProductVisual';
+import { PRODUCT_ICON_OPTIONS } from '../../shared/product/product-icon-options';
+import { ProductVisual } from '../../shared/product/ProductVisual';
 
 interface ProductFormBaseProps {
   readonly categories: readonly ProductCategory[];
@@ -117,7 +118,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           <input
             maxLength={100}
             minLength={2}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => {
+              setName(event.target.value);
+            }}
             placeholder="Ex.: Budweiser lata"
             required
             value={name}
@@ -127,7 +130,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           <span>Categoria</span>
           <select
             aria-label="Categoria"
-            onChange={(event) => setCategoryId(event.target.value)}
+            onChange={(event) => {
+              setCategoryId(event.target.value);
+            }}
             required
             value={categoryId}
           >
@@ -143,7 +148,12 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
         </label>
         <label className="form-field">
           <span>Tipo</span>
-          <select onChange={(event) => setKind(event.target.value as ProductKind)} value={kind}>
+          <select
+            onChange={(event) => {
+              setKind(event.target.value as ProductKind);
+            }}
+            value={kind}
+          >
             <option value="drink">Bebida</option>
             <option value="food">Comida</option>
           </select>
@@ -152,7 +162,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           <span>Ícone sem foto</span>
           <select
             aria-label="Ícone do produto"
-            onChange={(event) => setFallbackIcon(event.target.value as ProductFallbackIcon)}
+            onChange={(event) => {
+              setFallbackIcon(event.target.value as ProductFallbackIcon);
+            }}
             value={fallbackIcon}
           >
             {PRODUCT_ICON_OPTIONS.map((option) => (
@@ -167,7 +179,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           <input
             inputMode="decimal"
             min="0"
-            onChange={(event) => setCost(event.target.value)}
+            onChange={(event) => {
+              setCost(event.target.value);
+            }}
             placeholder="0,00"
             required
             step="0.01"
@@ -180,7 +194,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           <input
             inputMode="decimal"
             min="0"
-            onChange={(event) => setSalePrice(event.target.value)}
+            onChange={(event) => {
+              setSalePrice(event.target.value);
+            }}
             placeholder="0,00"
             required
             step="0.01"
@@ -192,7 +208,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           <span>Aviso de estoque baixo</span>
           <input
             min="0"
-            onChange={(event) => setLowStockThreshold(event.target.value)}
+            onChange={(event) => {
+              setLowStockThreshold(event.target.value);
+            }}
             required
             step="1"
             type="number"
@@ -230,7 +248,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
             {imageDataUrl === null ? null : (
               <button
                 className="button button--ghost button--compact"
-                onClick={() => setImageDataUrl(null)}
+                onClick={() => {
+                  setImageDataUrl(null);
+                }}
                 type="button"
               >
                 <X size={15} aria-hidden="true" />
@@ -245,7 +265,9 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
         <label className="checkbox-field">
           <input
             checked={active}
-            onChange={(event) => setActive(event.target.checked)}
+            onChange={(event) => {
+              setActive(event.target.checked);
+            }}
             type="checkbox"
           />
           Produto ativo para novas vendas
