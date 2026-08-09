@@ -12,6 +12,14 @@
       "types": "./src/payment-terminal.ts",
       "default": "./src/payment-terminal.ts"
     },
+    "./voucher-management": {
+      "types": "./src/voucher-management.ts",
+      "default": "./src/voucher-management.ts"
+    },
+    "./voucher-service-point": {
+      "types": "./src/voucher-service-point.ts",
+      "default": "./src/voucher-service-point.ts"
+    },
     "./schema": {
       "types": "./src/schema.ts",
       "default": "./src/schema.ts"

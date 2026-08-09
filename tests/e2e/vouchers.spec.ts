@@ -17,6 +17,7 @@ test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no e
     const eventName = `Evento voucher ${suffix}`;
     const categoryName = `Categoria voucher ${suffix}`;
     const productName = `Produto voucher ${suffix}`;
+    const tableName = `Mesa voucher ${suffix.slice(-5)}`;
     const voucherCode = `VCH-${suffix.slice(-8)}`;
 
     await window.getByRole('link', { name: 'Eventos' }).click();
@@ -41,16 +42,23 @@ test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no e
     await movementForm.getByRole('button', { name: 'Registrar movimento' }).click();
     await expect(productCard.getByText('3 un.', { exact: true })).toBeVisible();
 
+    await window.getByRole('link', { name: 'Mesas e balcão' }).click();
+    await window.getByPlaceholder('Ex.: Mesa 12').fill(tableName);
+    await window.getByRole('button', { name: 'Criar mesa' }).click();
+    await expect(window.getByRole('button', { name: new RegExp(tableName, 'u') })).toBeVisible();
+
     await window.getByRole('link', { name: 'Vouchers' }).click();
+    await window.getByLabel('Mesa vinculada').selectOption({ label: tableName });
     await window.getByPlaceholder('Ex.: Crédito patrocinador').fill(`Crédito ${suffix}`);
     await window.getByPlaceholder('Gerado automaticamente').fill(voucherCode);
     await window.getByPlaceholder('100,00').fill('10.00');
     await window.getByRole('button', { name: 'Emitir voucher' }).click();
     let voucherCard = window.locator('article.voucher-card').filter({ hasText: voucherCode });
+    await expect(voucherCard).toContainText(tableName);
     await expect(voucherCard).toContainText('R$ 10,00');
 
     await window.getByRole('link', { name: 'Mesas e balcão' }).click();
-    await window.getByRole('button', { name: /Balcão/u }).click();
+    await window.getByRole('button', { name: new RegExp(tableName, 'u') }).click();
     await window.getByRole('button', { name: new RegExp(productName, 'u') }).click();
     const voucherSelect = window.getByLabel('Voucher vinculado à comanda');
     await expect(voucherSelect.locator('option')).toHaveCount(2);

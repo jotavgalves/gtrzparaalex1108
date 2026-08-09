@@ -14,7 +14,7 @@ import {
   createExpense,
   createInventoryProduct,
   createProductCategory,
-  createVoucher,
+  createServicePoint,
   getCashState,
   getExpenseState,
   getOperationState,
@@ -26,6 +26,7 @@ import {
   switchProfile,
   type DatabaseContext,
 } from './index';
+import { createManagedVoucher } from './voucher-management';
 
 let temporaryDirectory: string | null = null;
 
@@ -55,14 +56,18 @@ function seedProduct(database: DatabaseContext): string {
   return product.id;
 }
 
-function createOrder(database: DatabaseContext, productId: string): string {
-  const counter = getOperationState(database).servicePoints[0];
+function createOrder(
+  database: DatabaseContext,
+  productId: string,
+  servicePointId?: string,
+): string {
+  const pointId = servicePointId ?? getOperationState(database).servicePoints[0]?.id;
 
-  if (counter === undefined) {
-    throw new Error('Balcão não criado.');
+  if (pointId === undefined) {
+    throw new Error('Ponto de atendimento não criado.');
   }
 
-  const order = openOrder(database, counter.id);
+  const order = openOrder(database, pointId);
   return addOrderItem(database, {
     orderId: order.id,
     itemKind: 'product',
@@ -76,10 +81,12 @@ describe('cash and expenses database', () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento financeiro', startsAt: Date.now() });
     const productId = seedProduct(database);
-    const voucher = createVoucher(database, {
+    const voucherTable = createServicePoint(database, { label: 'Mesa financeiro', type: 'table' });
+    const voucher = createManagedVoucher(database, {
       code: 'FIN-001',
       label: 'Crédito financeiro',
       initialBalanceCents: 500,
+      servicePointId: voucherTable.id,
     });
     openCashRegister(database, 1000);
 
@@ -88,7 +95,7 @@ describe('cash and expenses database', () => {
       discountCents: 0,
       payments: [{ method: 'cash', amountCents: 1000, receivedCents: 1500 }],
     });
-    const voucherOrderId = createOrder(database, productId);
+    const voucherOrderId = createOrder(database, productId, voucherTable.id);
     bindOrderVoucher(database, { orderId: voucherOrderId, code: voucher.code });
     closeOrder(database, {
       orderId: voucherOrderId,
