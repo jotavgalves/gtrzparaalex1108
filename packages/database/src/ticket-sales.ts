@@ -161,3 +161,55 @@ export function cancelTicketSale(
 
   return mapTicketSale(database, requireTicketSale(database, sale.id));
 }
+
+export function deleteTicketSale(
+  database: DatabaseContext,
+  input: { readonly saleId: string; readonly reason: string },
+): { readonly saleId: string; readonly deleted: true; readonly wasCancelledFirst: boolean } {
+  requireTicketProduction(database);
+  const eventId = requireTicketEvent(database);
+  let sale = requireTicketSale(database, input.saleId);
+
+  if (sale.event_id !== eventId) {
+    throw new Error('A venda não pertence ao evento ativo.');
+  }
+
+  const reason = input.reason.trim();
+  if (reason.length < 3) {
+    throw new Error('Informe o motivo da exclusão da venda de ingresso.');
+  }
+
+  const wasCancelledFirst = sale.status === 'active';
+  if (wasCancelledFirst) {
+    cancelTicketSale(database, { saleId: sale.id, reason });
+    sale = requireTicketSale(database, sale.id);
+  }
+
+  const codes = database.sqlite
+    .prepare('SELECT code FROM ticket_codes WHERE sale_id = ? ORDER BY created_at')
+    .all(sale.id) as { readonly code: string }[];
+
+  database.sqlite.transaction(() => {
+    appendAudit(database, {
+      action: 'ticket.sale-deleted',
+      entityType: 'ticket-sale',
+      entityId: sale.id,
+      eventId,
+      details: {
+        attendeeName: sale.attendee_name,
+        codes: codes.map((item) => item.code),
+        lotId: sale.lot_id,
+        previousStatus: sale.status,
+        quantity: sale.quantity,
+        reason,
+        source: sale.source,
+        totalCents: sale.total_cents,
+        wasCancelledFirst,
+      },
+    });
+    database.sqlite.prepare('DELETE FROM ticket_codes WHERE sale_id = ?').run(sale.id);
+    database.sqlite.prepare('DELETE FROM ticket_sales WHERE id = ?').run(sale.id);
+  })();
+
+  return { saleId: sale.id, deleted: true, wasCancelledFirst };
+}
