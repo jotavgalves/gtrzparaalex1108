@@ -11,6 +11,18 @@ export const stockMovementTypeSchema = z.enum([
   'courtesy',
   'return',
 ]);
+export const productFallbackIconSchema = z.enum([
+  'package',
+  'beer',
+  'cup-soda',
+  'coffee',
+  'sandwich',
+  'pizza',
+  'ice-cream',
+  'glass-water',
+  'candy',
+]);
+export const productImageDataUrlSchema = z.string().max(750000).nullable();
 
 export const productCategorySchema = z.object({
   id: z.uuid(),
@@ -24,6 +36,8 @@ export const productFinancialsSchema = z.object({
   costCents: z.number().int().nonnegative(),
   grossProfitCents: z.number().int(),
   marginPercent: z.number(),
+  currentStockValueCents: z.number().int().nonnegative(),
+  contributedCostCents: z.number().int().nonnegative(),
 });
 
 export const inventoryProductSchema = z.object({
@@ -37,6 +51,8 @@ export const inventoryProductSchema = z.object({
   active: z.boolean(),
   quantity: z.number().int().nonnegative(),
   lowStock: z.boolean(),
+  imageDataUrl: productImageDataUrlSchema,
+  fallbackIcon: productFallbackIconSchema,
   financials: productFinancialsSchema.nullable(),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
@@ -59,6 +75,8 @@ export const createProductInputSchema = z.object({
   costCents: z.number().int().nonnegative(),
   salePriceCents: z.number().int().nonnegative(),
   lowStockThreshold: z.number().int().nonnegative(),
+  imageDataUrl: productImageDataUrlSchema.optional(),
+  fallbackIcon: productFallbackIconSchema.optional(),
 });
 
 export const updateProductInputSchema = createProductInputSchema.extend({
@@ -110,8 +128,36 @@ export const stockTransferSchema = z.object({
 
 export const stockTransferListSchema = z.array(stockTransferSchema);
 
+export const productDeletionModeSchema = z.enum([
+  'keep-sales-history',
+  'refund-active-event-sales',
+]);
+export const productDeletionImpactSchema = z.object({
+  productId: z.uuid(),
+  productName: z.string().min(1),
+  currentQuantity: z.number().int().nonnegative(),
+  openOrdersCount: z.number().int().nonnegative(),
+  paidOrdersInActiveEventCount: z.number().int().nonnegative(),
+  paidOrdersHistoricalCount: z.number().int().nonnegative(),
+  stockMovementsCount: z.number().int().nonnegative(),
+  stockTransfersCount: z.number().int().nonnegative(),
+  affectedCombosCount: z.number().int().nonnegative(),
+});
+export const deleteProductInputSchema = z.object({
+  productId: z.uuid(),
+  mode: productDeletionModeSchema,
+  reason: z.string().trim().min(3).max(240),
+});
+export const productDeletionResultSchema = z.object({
+  productId: z.uuid(),
+  deleted: z.literal(true),
+  refundedOrdersCount: z.number().int().nonnegative(),
+  preservedHistoricalOrdersCount: z.number().int().nonnegative(),
+});
+
 export type ProductKind = z.infer<typeof productKindSchema>;
 export type StockMovementType = z.infer<typeof stockMovementTypeSchema>;
+export type ProductFallbackIcon = z.infer<typeof productFallbackIconSchema>;
 export type ProductCategory = z.infer<typeof productCategorySchema>;
 export type ProductFinancials = z.infer<typeof productFinancialsSchema>;
 export type InventoryProduct = z.infer<typeof inventoryProductSchema>;
@@ -122,6 +168,10 @@ export type UpdateProductInput = z.infer<typeof updateProductInputSchema>;
 export type RecordStockMovementInput = z.infer<typeof recordStockMovementInputSchema>;
 export type TransferStockInput = z.infer<typeof transferStockInputSchema>;
 export type StockTransfer = z.infer<typeof stockTransferSchema>;
+export type ProductDeletionMode = z.infer<typeof productDeletionModeSchema>;
+export type ProductDeletionImpact = z.infer<typeof productDeletionImpactSchema>;
+export type DeleteProductInput = z.infer<typeof deleteProductInputSchema>;
+export type ProductDeletionResult = z.infer<typeof productDeletionResultSchema>;
 
 export interface InventoryApi {
   getState(): Promise<InventoryState>;
@@ -131,4 +181,6 @@ export interface InventoryApi {
   recordMovement(input: RecordStockMovementInput): Promise<InventoryProduct>;
   listTransfers(): Promise<readonly StockTransfer[]>;
   transferStock(input: TransferStockInput): Promise<StockTransfer>;
+  previewDeletion(productId: string): Promise<ProductDeletionImpact>;
+  deleteProduct(input: DeleteProductInput): Promise<ProductDeletionResult>;
 }
