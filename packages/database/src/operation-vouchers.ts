@@ -1,5 +1,6 @@
 import { appendAudit } from './audit';
 import type { DatabaseContext } from './types';
+import { requireVoucherServicePointForOrder } from './voucher-service-point';
 import type { DatabaseVoucherUseInput } from './vouchers';
 
 export interface DatabaseOrderVoucherAllocation {
@@ -15,6 +16,7 @@ export interface DatabaseOrderVoucherAllocation {
 interface OrderRow {
   readonly id: string;
   readonly event_id: string;
+  readonly service_point_id: string;
   readonly service_point_label: string;
   readonly status: 'open' | 'paid' | 'cancelled';
 }
@@ -52,7 +54,7 @@ function formatMoney(cents: number): string {
 function requireOpenOrder(database: DatabaseContext, orderId: string): OrderRow {
   const order = database.sqlite
     .prepare(
-      `SELECT id, event_id, service_point_label, status
+      `SELECT id, event_id, service_point_id, service_point_label, status
        FROM orders
        WHERE id = ?`,
     )
@@ -131,6 +133,13 @@ export function bindOrderVoucher(
   if (voucher.status !== 'active' || voucher.remaining_balance_cents <= 0) {
     throw new Error(`O voucher ${voucher.code} não possui saldo ativo para uso.`);
   }
+
+  requireVoucherServicePointForOrder(database, {
+    voucherId: voucher.id,
+    eventId: order.event_id,
+    servicePointId: order.service_point_id,
+    servicePointLabel: order.service_point_label,
+  });
 
   const conflictingOrder = database.sqlite
     .prepare(
@@ -231,11 +240,19 @@ export function validateOrderVoucherUses(
     return [];
   }
 
+  const order = requireOpenOrder(database, orderId);
   const allocation = getOrderVoucherAllocation(database, orderId);
 
   if (allocation === null) {
     throw new Error('Vincule o voucher à mesa antes de concluir a venda.');
   }
+
+  requireVoucherServicePointForOrder(database, {
+    voucherId: allocation.voucherId,
+    eventId: order.event_id,
+    servicePointId: order.service_point_id,
+    servicePointLabel: order.service_point_label,
+  });
 
   const use = uses[0];
 
