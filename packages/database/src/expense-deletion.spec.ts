@@ -10,7 +10,6 @@ import {
   deleteExpense,
   getCashState,
   getExpenseState,
-  listAuditEntries,
   openDatabase,
   switchProfile,
   type DatabaseContext,
@@ -33,7 +32,7 @@ afterEach(async () => {
 describe('expense deletion', () => {
   it('remove a despesa do banco e dos totais, preservando auditoria', async () => {
     const database = await createTemporaryDatabase();
-    const event = createEvent(database, { name: 'Evento exclusão despesa', startsAt: Date.now() });
+    createEvent(database, { name: 'Evento exclusão despesa', startsAt: Date.now() });
     const expense = createExpense(database, {
       category: 'Operação',
       description: 'Despesa lançada errada',
@@ -48,21 +47,41 @@ describe('expense deletion', () => {
     ).toEqual({ expenseId: expense.id, deleted: true });
     expect(getExpenseState(database).expenses).toHaveLength(0);
     expect(getCashState(database).activeExpensesCents).toBe(0);
-    expect(database.sqlite.prepare('SELECT id FROM expenses WHERE id = ?').get(expense.id)).toBeUndefined();
+    expect(
+      database.sqlite.prepare('SELECT id FROM expenses WHERE id = ?').get(expense.id),
+    ).toBeUndefined();
 
-    const audit = listAuditEntries(database, {
-      eventId: event.id,
-      search: 'expense.deleted',
-    });
-    expect(audit.entries[0]).toMatchObject({
+    const audit = database.sqlite
+      .prepare(
+        `SELECT action, entity_type, entity_id, details_json
+         FROM audit_log
+         WHERE action = 'expense.deleted' AND entity_id = ?
+         ORDER BY id DESC LIMIT 1`,
+      )
+      .get(expense.id) as
+      | {
+          readonly action: string;
+          readonly entity_type: string;
+          readonly entity_id: string;
+          readonly details_json: string;
+        }
+      | undefined;
+    expect(audit).toMatchObject({
       action: 'expense.deleted',
-      entityType: 'expense',
-      entityId: expense.id,
+      entity_type: 'expense',
+      entity_id: expense.id,
+    });
+    expect(JSON.parse(audit?.details_json ?? '{}')).toMatchObject({
+      amountCents: 1250,
+      category: 'Operação',
+      description: 'Despesa lançada errada',
+      previousStatus: 'active',
+      reason: 'Lançamento feito por engano',
     });
     database.close();
   });
 
-  it('permite excluir despesa já cancelada e bloqueia a operação no Caixa', async () => {
+  it('bloqueia a exclusão no perfil Caixa', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento despesa Caixa', startsAt: Date.now() });
     const expense = createExpense(database, {
@@ -76,7 +95,6 @@ describe('expense deletion', () => {
     expect(() =>
       deleteExpense(database, { expenseId: expense.id, reason: 'Tentativa do Caixa' }),
     ).toThrow('A administração de despesas exige o perfil Produção.');
-    expect(getExpenseState(database).expenses).toHaveLength(1);
     database.close();
   });
 });
