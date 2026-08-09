@@ -9,4 +9,4 @@ export type {
   DatabaseTicketState,
 } from './ticket-model';
 export { getTicketState } from './ticket-repository';
-export { cancelTicketSale, createTicketSale } from './ticket-sales';
+export { cancelTicketSale, createTicketSale, deleteTicketSale } from './ticket-sales';
