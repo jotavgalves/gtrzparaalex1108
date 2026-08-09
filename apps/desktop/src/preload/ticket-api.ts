@@ -4,17 +4,21 @@ import {
   cancelTicketSaleInputSchema,
   createTicketLotInputSchema,
   createTicketSaleInputSchema,
+  deleteTicketSaleInputSchema,
   IPC_CHANNELS,
   ticketLotSchema,
+  ticketSaleDeletionResultSchema,
   ticketSaleSchema,
   ticketStateSchema,
   updateTicketLotInputSchema,
   type CancelTicketSaleInput,
   type CreateTicketLotInput,
   type CreateTicketSaleInput,
+  type DeleteTicketSaleInput,
   type TicketApi,
   type TicketLot,
   type TicketSale,
+  type TicketSaleDeletionResult,
   type TicketState,
   type UpdateTicketLotInput,
 } from '@gtrz/contracts';
@@ -47,5 +51,11 @@ export const ticketApi: TicketApi = {
     const parsedInput = cancelTicketSaleInputSchema.parse(input);
     const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.ticketsCancelSale, parsedInput);
     return ticketSaleSchema.parse(payload);
+  },
+
+  async deleteSale(input: DeleteTicketSaleInput): Promise<TicketSaleDeletionResult> {
+    const parsedInput = deleteTicketSaleInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.ticketsDeleteSale, parsedInput);
+    return ticketSaleDeletionResultSchema.parse(payload);
   },
 };
