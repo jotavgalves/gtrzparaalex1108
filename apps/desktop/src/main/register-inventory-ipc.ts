@@ -66,10 +66,18 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
       costCents: input.costCents,
       salePriceCents: input.salePriceCents,
       lowStockThreshold: input.lowStockThreshold,
-      ...(input.imageDataUrl === undefined ? {} : { imageDataUrl: input.imageDataUrl }),
-      ...(input.fallbackIcon === undefined ? {} : { fallbackIcon: input.fallbackIcon }),
     };
-    return inventoryProductSchema.parse(createInventoryProduct(options.getDatabase(), productInput));
+
+    if (input.imageDataUrl !== undefined) {
+      Object.assign(productInput, { imageDataUrl: input.imageDataUrl });
+    }
+    if (input.fallbackIcon !== undefined) {
+      Object.assign(productInput, { fallbackIcon: input.fallbackIcon });
+    }
+
+    return inventoryProductSchema.parse(
+      createInventoryProduct(options.getDatabase(), productInput),
+    );
   });
   ipcMain.handle(IPC_CHANNELS.inventoryUpdateProduct, (_event, payload: unknown) => {
     const input = updateProductInputSchema.parse(payload);
@@ -82,9 +90,15 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
       costCents: input.costCents,
       salePriceCents: input.salePriceCents,
       lowStockThreshold: input.lowStockThreshold,
-      ...(input.imageDataUrl === undefined ? {} : { imageDataUrl: input.imageDataUrl }),
-      ...(input.fallbackIcon === undefined ? {} : { fallbackIcon: input.fallbackIcon }),
     };
+
+    if (input.imageDataUrl !== undefined) {
+      Object.assign(productInput, { imageDataUrl: input.imageDataUrl });
+    }
+    if (input.fallbackIcon !== undefined) {
+      Object.assign(productInput, { fallbackIcon: input.fallbackIcon });
+    }
+
     return inventoryProductSchema.parse(updateInventoryProduct(options.getDatabase(), productInput));
   });
   ipcMain.handle(IPC_CHANNELS.inventoryRecordMovement, (_event, payload: unknown) => {
