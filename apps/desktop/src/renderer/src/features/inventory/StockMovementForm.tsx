@@ -97,7 +97,9 @@ export function StockMovementForm({
         <label className="form-field">
           <span>Motivo</span>
           <select
-            onChange={(event) => setType(event.target.value as StockMovementType)}
+            onChange={(event) => {
+              setType(event.target.value as StockMovementType);
+            }}
             value={type}
           >
             {movements.map((movement) => (
@@ -112,7 +114,9 @@ export function StockMovementForm({
           <input
             max={intent === 'decrease' ? product.quantity : undefined}
             min="1"
-            onChange={(event) => setQuantity(event.target.value)}
+            onChange={(event) => {
+              setQuantity(event.target.value);
+            }}
             required
             step="1"
             type="number"
@@ -136,7 +140,9 @@ export function StockMovementForm({
         <span>Observação</span>
         <input
           maxLength={240}
-          onChange={(event) => setNote(event.target.value)}
+          onChange={(event) => {
+            setNote(event.target.value);
+          }}
           placeholder="Opcional"
           value={note}
         />
