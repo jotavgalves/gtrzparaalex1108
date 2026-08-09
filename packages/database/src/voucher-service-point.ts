@@ -83,11 +83,7 @@ export function setVoucherServicePointBinding(
 ): DatabaseVoucherServicePointBinding {
   const target = getServicePoint(database, input.servicePointId);
 
-  if (
-    target?.event_id !== input.eventId ||
-    target.type !== 'table' ||
-    target.active !== 1
-  ) {
+  if (target?.event_id !== input.eventId || target.type !== 'table' || target.active !== 1) {
     throw new Error('Selecione uma mesa ativa do evento para vincular o voucher.');
   }
 
