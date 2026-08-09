@@ -45,7 +45,20 @@ export function registerVoucherIpcHandlers(options: RegisterVoucherIpcOptions): 
 
   ipcMain.handle(IPC_CHANNELS.vouchersCreate, (_event, payload: unknown) => {
     const input = createVoucherInputSchema.parse(payload);
-    return voucherSchema.parse(createManagedVoucher(options.getDatabase(), input));
+    const databaseInput =
+      input.code === undefined
+        ? {
+            label: input.label,
+            initialBalanceCents: input.initialBalanceCents,
+            servicePointId: input.servicePointId,
+          }
+        : {
+            code: input.code,
+            label: input.label,
+            initialBalanceCents: input.initialBalanceCents,
+            servicePointId: input.servicePointId,
+          };
+    return voucherSchema.parse(createManagedVoucher(options.getDatabase(), databaseInput));
   });
 
   ipcMain.handle(IPC_CHANNELS.vouchersChangeStatus, (_event, payload: unknown) => {
