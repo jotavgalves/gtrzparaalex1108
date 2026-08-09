@@ -13,7 +13,6 @@ import {
   createInventoryProduct,
   createProductCategory,
   createServicePoint,
-  createVoucher,
   getOrder,
   openDatabase,
   openOrder,
@@ -21,6 +20,7 @@ import {
   unbindOrderVoucher,
   type DatabaseContext,
 } from './index';
+import { createManagedVoucher } from './voucher-management';
 
 let temporaryDirectory: string | null = null;
 
@@ -36,7 +36,10 @@ afterEach(async () => {
   }
 });
 
-function seedOrder(database: DatabaseContext, tableLabel: string): string {
+function seedOrder(
+  database: DatabaseContext,
+  tableLabel: string,
+): { readonly orderId: string; readonly tableId: string } {
   const category = createProductCategory(database, `Bebidas ${tableLabel}`);
   const product = createInventoryProduct(database, {
     categoryId: category.id,
@@ -49,70 +52,73 @@ function seedOrder(database: DatabaseContext, tableLabel: string): string {
   recordStockMovement(database, { productId: product.id, type: 'purchase', quantity: 5 });
   const table = createServicePoint(database, { label: tableLabel, type: 'table' });
   const order = openOrder(database, table.id);
-  return addOrderItem(database, {
+  const orderId = addOrderItem(database, {
     orderId: order.id,
     itemKind: 'product',
     itemId: product.id,
     quantity: 1,
   }).id;
+  return { orderId, tableId: table.id };
 }
 
 describe('voucher vinculado à comanda', () => {
-  it('persiste na mesa, impede uso simultâneo e libera ao remover', async () => {
+  it('aceita somente a mesa original e o código manual não burla o vínculo', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento vínculo', startsAt: Date.now() });
-    const firstOrderId = seedOrder(database, 'Mesa A');
-    const secondOrderId = seedOrder(database, 'Mesa B');
-    const voucher = createVoucher(database, {
+    const first = seedOrder(database, 'Mesa A');
+    const second = seedOrder(database, 'Mesa B');
+    const voucher = createManagedVoucher(database, {
       code: 'VCH-MESA',
       label: 'Crédito mesa',
       initialBalanceCents: 1500,
+      servicePointId: first.tableId,
     });
 
-    bindOrderVoucher(database, { orderId: firstOrderId, code: voucher.code });
-    expect(getOrder(database, firstOrderId).voucherAllocation).toMatchObject({
+    bindOrderVoucher(database, { orderId: first.orderId, code: voucher.code });
+    expect(getOrder(database, first.orderId).voucherAllocation).toMatchObject({
       code: voucher.code,
       label: 'Crédito mesa',
       remainingBalanceCents: 1500,
     });
     expect(() =>
-      bindOrderVoucher(database, { orderId: secondOrderId, code: voucher.code }),
-    ).toThrow('já está vinculado a Mesa A');
+      bindOrderVoucher(database, { orderId: second.orderId, code: voucher.code }),
+    ).toThrow('O voucher só pode ser utilizado em Mesa A, não em Mesa B.');
 
-    unbindOrderVoucher(database, firstOrderId);
-    expect(getOrder(database, firstOrderId).voucherAllocation).toBeNull();
+    unbindOrderVoucher(database, first.orderId);
+    expect(getOrder(database, first.orderId).voucherAllocation).toBeNull();
     expect(() =>
-      bindOrderVoucher(database, { orderId: secondOrderId, code: voucher.code }),
-    ).not.toThrow();
+      bindOrderVoucher(database, { orderId: second.orderId, code: voucher.code }),
+    ).toThrow('O voucher só pode ser utilizado em Mesa A, não em Mesa B.');
     database.close();
   });
 
   it('formata saldo em reais, consome somente no fechamento e libera ao cancelar', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento saldo', startsAt: Date.now() });
-    const orderId = seedOrder(database, 'Mesa saldo');
-    const voucher = createVoucher(database, {
+    const seeded = seedOrder(database, 'Mesa saldo');
+    const voucher = createManagedVoucher(database, {
       code: 'VCH-SALDO',
       label: 'Crédito limitado',
       initialBalanceCents: 400,
+      servicePointId: seeded.tableId,
     });
 
-    bindOrderVoucher(database, { orderId, code: voucher.code });
+    bindOrderVoucher(database, { orderId: seeded.orderId, code: voucher.code });
     expect(() =>
       closeOrder(database, {
-        orderId,
+        orderId: seeded.orderId,
         discountCents: 0,
         payments: [{ method: 'cash', amountCents: 500, receivedCents: 1000 }],
         voucherUses: [{ code: voucher.code, amountCents: 500 }],
       }),
     ).toThrow(/Disponível: R\$\s4,00\./u);
-    expect(getOrder(database, orderId)).toMatchObject({
+    expect(getOrder(database, seeded.orderId)).toMatchObject({
       status: 'open',
       voucherAllocation: { remainingBalanceCents: 400 },
     });
 
     const paid = closeOrder(database, {
-      orderId,
+      orderId: seeded.orderId,
       discountCents: 0,
       payments: [{ method: 'cash', amountCents: 600, receivedCents: 1000 }],
       voucherUses: [{ code: voucher.code, amountCents: 400 }],
@@ -120,7 +126,10 @@ describe('voucher vinculado à comanda', () => {
     expect(paid.voucherAllocation).toBeNull();
     expect(paid.payments[0]).toMatchObject({ changeCents: 400 });
 
-    cancelOrder(database, { orderId, reason: 'Estorno para validar restituição' });
+    cancelOrder(database, {
+      orderId: seeded.orderId,
+      reason: 'Estorno para validar restituição',
+    });
     const balance = database.sqlite
       .prepare('SELECT remaining_balance_cents FROM vouchers WHERE id = ?')
       .get(voucher.id);
