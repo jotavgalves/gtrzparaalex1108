@@ -66,7 +66,7 @@ export function getVoucherServicePointBinding(
   }
 
   const servicePoint = getServicePoint(database, row.value);
-  if (servicePoint === null || servicePoint.type !== 'table') {
+  if (servicePoint?.type !== 'table') {
     return null;
   }
 
@@ -84,8 +84,7 @@ export function setVoucherServicePointBinding(
   const target = getServicePoint(database, input.servicePointId);
 
   if (
-    target === null ||
-    target.event_id !== input.eventId ||
+    target?.event_id !== input.eventId ||
     target.type !== 'table' ||
     target.active !== 1
   ) {
@@ -93,7 +92,7 @@ export function setVoucherServicePointBinding(
   }
 
   const current = getVoucherServicePointBinding(database, input.voucherId);
-  if (current !== null && current.servicePointId !== target.id && current.active) {
+  if (current?.servicePointId !== undefined && current.servicePointId !== target.id && current.active) {
     throw new Error(
       `Este voucher permanece vinculado a ${current.servicePointLabel} enquanto essa mesa existir.`,
     );
