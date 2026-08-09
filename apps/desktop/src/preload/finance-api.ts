@@ -5,6 +5,8 @@ import {
   cashStateSchema,
   closeCashRegisterInputSchema,
   createExpenseInputSchema,
+  deleteExpenseInputSchema,
+  expenseDeletionResultSchema,
   expenseSchema,
   expenseStateSchema,
   IPC_CHANNELS,
@@ -15,8 +17,10 @@ import {
   type CashState,
   type CloseCashRegisterInput,
   type CreateExpenseInput,
+  type DeleteExpenseInput,
   type Expense,
   type ExpenseApi,
+  type ExpenseDeletionResult,
   type ExpenseState,
   type OpenCashRegisterInput,
   type RecordCashMovementInput,
@@ -63,5 +67,11 @@ export const expenseApi: ExpenseApi = {
     const parsedInput = cancelExpenseInputSchema.parse(input);
     const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.expensesCancel, parsedInput);
     return expenseSchema.parse(payload);
+  },
+
+  async delete(input: DeleteExpenseInput): Promise<ExpenseDeletionResult> {
+    const parsedInput = deleteExpenseInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.expensesDelete, parsedInput);
+    return expenseDeletionResultSchema.parse(payload);
   },
 };
