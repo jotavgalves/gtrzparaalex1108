@@ -2,6 +2,12 @@ import { randomUUID } from 'node:crypto';
 
 import { appendAudit } from './audit';
 import { getSessionState } from './control';
+import { getProductEconomics } from './product-administration';
+import {
+  getProductPresentation,
+  setProductPresentation,
+  type DatabaseProductFallbackIcon,
+} from './product-presentation';
 import type { DatabaseContext } from './types';
 
 export type DatabaseProductKind = 'food' | 'drink';
@@ -27,6 +33,8 @@ export interface DatabaseProductFinancials {
   readonly costCents: number;
   readonly grossProfitCents: number;
   readonly marginPercent: number;
+  readonly currentStockValueCents: number;
+  readonly contributedCostCents: number;
 }
 
 export interface DatabaseInventoryProduct {
@@ -40,6 +48,8 @@ export interface DatabaseInventoryProduct {
   readonly active: boolean;
   readonly quantity: number;
   readonly lowStock: boolean;
+  readonly imageDataUrl: string | null;
+  readonly fallbackIcon: DatabaseProductFallbackIcon;
   readonly financials: DatabaseProductFinancials | null;
   readonly createdAt: number;
   readonly updatedAt: number;
@@ -81,6 +91,8 @@ interface ProductWriteInput {
   readonly costCents: number;
   readonly salePriceCents: number;
   readonly lowStockThreshold: number;
+  readonly imageDataUrl?: string | null;
+  readonly fallbackIcon?: DatabaseProductFallbackIcon;
 }
 
 const POSITIVE_MOVEMENTS = new Set<DatabaseStockMovementType>([
@@ -97,20 +109,24 @@ function requireProduction(database: DatabaseContext): void {
 
 function requireActiveEvent(database: DatabaseContext): string {
   const event = getSessionState(database).activeEvent;
-
   if (event === null) {
     throw new Error('Selecione um evento aberto antes de movimentar o estoque.');
   }
-
   return event.id;
 }
 
-function calculateFinancials(costCents: number, salePriceCents: number): DatabaseProductFinancials {
+function calculateFinancials(
+  database: DatabaseContext,
+  productId: string,
+  eventId: string | null,
+  costCents: number,
+  salePriceCents: number,
+): DatabaseProductFinancials {
   const grossProfitCents = salePriceCents - costCents;
   const marginPercent =
     salePriceCents === 0 ? 0 : Math.round((grossProfitCents / salePriceCents) * 10_000) / 100;
-
-  return { costCents, grossProfitCents, marginPercent };
+  const economics = getProductEconomics(database, productId, eventId);
+  return { costCents, grossProfitCents, marginPercent, ...economics };
 }
 
 function mapCategory(row: CategoryRow): DatabaseProductCategory {
@@ -124,12 +140,12 @@ function mapCategory(row: CategoryRow): DatabaseProductCategory {
 }
 
 function mapProduct(
+  database: DatabaseContext,
   row: ProductRow,
   showFinancials: boolean,
-  hasActiveEvent: boolean,
+  eventId: string | null,
 ): DatabaseInventoryProduct {
-  const quantity = row.quantity;
-
+  const presentation = getProductPresentation(database, row.id);
   return {
     id: row.id,
     categoryId: row.category_id,
@@ -139,9 +155,13 @@ function mapProduct(
     salePriceCents: row.sale_price_cents,
     lowStockThreshold: row.low_stock_threshold,
     active: row.active === 1,
-    quantity,
-    lowStock: hasActiveEvent && quantity <= row.low_stock_threshold,
-    financials: showFinancials ? calculateFinancials(row.cost_cents, row.sale_price_cents) : null,
+    quantity: row.quantity,
+    lowStock: eventId !== null && row.quantity <= row.low_stock_threshold,
+    imageDataUrl: presentation.imageDataUrl,
+    fallbackIcon: presentation.fallbackIcon,
+    financials: showFinancials
+      ? calculateFinancials(database, row.id, eventId, row.cost_cents, row.sale_price_cents)
+      : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -184,7 +204,7 @@ function listProducts(
     )
     .all(eventId) as ProductRow[];
   const showFinancials = getSessionState(database).profile === 'production';
-  return rows.map((row) => mapProduct(row, showFinancials, eventId !== null));
+  return rows.map((row) => mapProduct(database, row, showFinancials, eventId));
 }
 
 function requireCategory(database: DatabaseContext, categoryId: string): DatabaseProductCategory {
@@ -194,11 +214,7 @@ function requireCategory(database: DatabaseContext, categoryId: string): Databas
        FROM product_categories WHERE id = ?`,
     )
     .get(categoryId) as CategoryRow | undefined;
-
-  if (row === undefined) {
-    throw new Error('A categoria informada não existe.');
-  }
-
+  if (row === undefined) throw new Error('A categoria informada não existe.');
   return mapCategory(row);
 }
 
@@ -206,28 +222,15 @@ function requireProductRow(database: DatabaseContext, productId: string): Produc
   const row = database.sqlite
     .prepare(
       `SELECT
-         p.id,
-         p.category_id,
-         c.name AS category_name,
-         p.name,
-         p.kind,
-         p.cost_cents,
-         p.sale_price_cents,
-         p.low_stock_threshold,
-         p.active,
-         0 AS quantity,
-         p.created_at,
-         p.updated_at
+         p.id, p.category_id, c.name AS category_name, p.name, p.kind, p.cost_cents,
+         p.sale_price_cents, p.low_stock_threshold, p.active, 0 AS quantity,
+         p.created_at, p.updated_at
        FROM products p
        INNER JOIN product_categories c ON c.id = p.category_id
        WHERE p.id = ?`,
     )
     .get(productId) as ProductRow | undefined;
-
-  if (row === undefined) {
-    throw new Error('O produto informado não existe.');
-  }
-
+  if (row === undefined) throw new Error('O produto informado não existe.');
   return row;
 }
 
@@ -244,7 +247,6 @@ function requireUniqueName(
          AND (? IS NULL OR id != ?)`,
     )
     .get(name, excludedId ?? null, excludedId ?? null) as { readonly id: string } | undefined;
-
   if (row !== undefined) {
     throw new Error(
       table === 'products' ? 'Já existe um produto com esse nome.' : 'Já existe essa categoria.',
@@ -258,11 +260,7 @@ function getProduct(
   eventId: string | null,
 ): DatabaseInventoryProduct {
   const product = listProducts(database, eventId).find((item) => item.id === productId);
-
-  if (product === undefined) {
-    throw new Error('O produto informado não existe.');
-  }
-
+  if (product === undefined) throw new Error('O produto informado não existe.');
   return product;
 }
 
@@ -284,7 +282,6 @@ export function createProductCategory(
   requireUniqueName(database, 'product_categories', name);
   const id = randomUUID();
   const now = Date.now();
-
   database.sqlite.transaction(() => {
     database.sqlite
       .prepare(
@@ -299,7 +296,6 @@ export function createProductCategory(
       details: { name },
     });
   })();
-
   return requireCategory(database, id);
 }
 
@@ -309,16 +305,13 @@ export function createInventoryProduct(
 ): DatabaseInventoryProduct {
   requireProduction(database);
   const category = requireCategory(database, input.categoryId);
-
   if (!category.active) {
     throw new Error('Não é possível cadastrar produto em uma categoria inativa.');
   }
-
   const name = input.name.trim();
   requireUniqueName(database, 'products', name);
   const id = randomUUID();
   const now = Date.now();
-
   database.sqlite.transaction(() => {
     database.sqlite
       .prepare(
@@ -338,6 +331,10 @@ export function createInventoryProduct(
         now,
         now,
       );
+    setProductPresentation(database, id, {
+      imageDataUrl: input.imageDataUrl ?? null,
+      fallbackIcon: input.fallbackIcon ?? 'package',
+    });
     appendAudit(database, {
       action: 'inventory.product-created',
       entityType: 'product',
@@ -345,6 +342,8 @@ export function createInventoryProduct(
       details: {
         categoryId: input.categoryId,
         costCents: input.costCents,
+        fallbackIcon: input.fallbackIcon ?? 'package',
+        hasImage: input.imageDataUrl !== undefined && input.imageDataUrl !== null,
         kind: input.kind,
         lowStockThreshold: input.lowStockThreshold,
         name,
@@ -352,7 +351,6 @@ export function createInventoryProduct(
       },
     });
   })();
-
   return getProduct(database, id, getSessionState(database).activeEvent?.id ?? null);
 }
 
@@ -363,15 +361,11 @@ export function updateInventoryProduct(
   requireProduction(database);
   const current = requireProductRow(database, input.productId);
   const category = requireCategory(database, input.categoryId);
-
-  if (!category.active) {
-    throw new Error('Não é possível mover o produto para uma categoria inativa.');
-  }
-
+  if (!category.active) throw new Error('Não é possível mover o produto para uma categoria inativa.');
   const name = input.name.trim();
   requireUniqueName(database, 'products', name, input.productId);
+  const presentation = getProductPresentation(database, input.productId);
   const now = Date.now();
-
   database.sqlite.transaction(() => {
     database.sqlite
       .prepare(
@@ -391,6 +385,10 @@ export function updateInventoryProduct(
         now,
         input.productId,
       );
+    setProductPresentation(database, input.productId, {
+      imageDataUrl: input.imageDataUrl === undefined ? presentation.imageDataUrl : input.imageDataUrl,
+      fallbackIcon: input.fallbackIcon ?? presentation.fallbackIcon,
+    });
     appendAudit(database, {
       action: 'inventory.product-updated',
       entityType: 'product',
@@ -404,11 +402,10 @@ export function updateInventoryProduct(
           name: current.name,
           salePriceCents: current.sale_price_cents,
         },
-        after: { ...input, name },
+        after: { ...input, imageDataUrl: input.imageDataUrl === null ? null : undefined, name },
       },
     });
   })();
-
   return getProduct(database, input.productId, getSessionState(database).activeEvent?.id ?? null);
 }
 
@@ -430,7 +427,6 @@ export function recordStockMovement(
     .get(eventId, input.productId) as { readonly quantity: number } | undefined;
   const currentQuantity = currentRow?.quantity ?? 0;
   const nextQuantity = currentQuantity + delta;
-
   if (nextQuantity < 0) {
     throw new Error(`Estoque insuficiente. Saldo atual: ${String(currentQuantity)}.`);
   }
@@ -439,7 +435,6 @@ export function recordStockMovement(
   const now = Date.now();
   const trimmedNote = input.note?.trim();
   const note = trimmedNote === undefined || trimmedNote.length === 0 ? null : trimmedNote;
-
   database.sqlite.transaction(() => {
     database.sqlite
       .prepare(
@@ -471,6 +466,5 @@ export function recordStockMovement(
       },
     });
   })();
-
   return getProduct(database, input.productId, eventId);
 }
