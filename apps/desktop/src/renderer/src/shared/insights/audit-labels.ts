@@ -29,10 +29,12 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   'cash.closed': 'Caixa fechado',
   'expense.created': 'Despesa registrada',
   'expense.cancelled': 'Despesa cancelada',
+  'expense.deleted': 'Despesa excluída definitivamente',
   'ticket.lot-created': 'Lote de ingressos criado',
   'ticket.lot-updated': 'Lote de ingressos atualizado',
   'ticket.sale-created': 'Ingressos vendidos',
   'ticket.sale-cancelled': 'Venda de ingressos cancelada',
+  'ticket.sale-deleted': 'Venda de ingressos excluída definitivamente',
 };
 
 const ENTITY_LABELS: Readonly<Record<string, string>> = {
