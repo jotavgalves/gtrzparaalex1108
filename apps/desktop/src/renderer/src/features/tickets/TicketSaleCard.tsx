@@ -151,8 +151,8 @@ export function TicketSaleCard({
             </button>
           </div>
           <small>
-            Se a venda ainda estiver ativa, a exclusão primeiro cancela a venda, devolve
-            capacidade e receita e só depois remove a venda e seus códigos.
+            Se a venda ainda estiver ativa, a exclusão primeiro cancela a venda, devolve capacidade
+            e receita e só depois remove a venda e seus códigos.
           </small>
         </div>
       ) : null}

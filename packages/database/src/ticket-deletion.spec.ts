@@ -60,7 +60,9 @@ describe('ticket sale deletion', () => {
     expect(state.activeRevenueCents).toBe(0);
     expect(state.lots[0]?.availableQuantity).toBe(5);
     expect(getCashState(database).salesByMethod.pixCents).toBe(0);
-    expect(database.sqlite.prepare('SELECT id FROM ticket_sales WHERE id = ?').get(sale.id)).toBeUndefined();
+    expect(
+      database.sqlite.prepare('SELECT id FROM ticket_sales WHERE id = ?').get(sale.id),
+    ).toBeUndefined();
     expect(
       database.sqlite.prepare('SELECT id FROM ticket_codes WHERE sale_id = ?').all(sale.id),
     ).toHaveLength(0);

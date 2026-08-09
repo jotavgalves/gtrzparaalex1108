@@ -123,7 +123,9 @@ export function ExpenseCard({
               Excluir definitivamente
             </button>
           </div>
-          <small>A exclusão remove o lançamento. A auditoria da exclusão permanece registrada.</small>
+          <small>
+            A exclusão remove o lançamento. A auditoria da exclusão permanece registrada.
+          </small>
         </div>
       ) : null}
     </article>
