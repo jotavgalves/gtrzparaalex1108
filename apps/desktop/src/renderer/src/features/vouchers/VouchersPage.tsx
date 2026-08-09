@@ -1,4 +1,4 @@
-import { RefreshCw, Ticket, TriangleAlert } from 'lucide-react';
+import { RefreshCw, Ticket, Trash2, TriangleAlert } from 'lucide-react';
 
 import { VoucherCard } from './VoucherCard';
 import { VoucherForm } from './VoucherForm';
@@ -13,9 +13,22 @@ function formatMoney(cents: number): string {
 }
 
 export function VouchersPage(): React.JSX.Element {
-  const { state, loading, busy, error, message, reload, createVoucher, changeStatus } =
-    useVouchers();
+  const {
+    state,
+    loading,
+    busy,
+    error,
+    message,
+    reload,
+    createVoucher,
+    changeStatus,
+    updateVoucher,
+    addBalance,
+    deleteVoucher,
+  } = useVouchers();
   const vouchers = state?.vouchers ?? [];
+  const deletedVouchers = state?.deletedVouchers ?? [];
+  const servicePoints = state?.servicePoints ?? [];
   const transactions = state?.transactions ?? [];
   const activeVouchers = vouchers.filter((voucher) => voucher.status === 'active');
   const cancelledVouchers = vouchers.filter((voucher) => voucher.status === 'cancelled');
@@ -31,9 +44,12 @@ export function VouchersPage(): React.JSX.Element {
     <section className="feature-page">
       <header className="feature-header">
         <div>
-          <span className="eyebrow">Crédito controlado por evento</span>
+          <span className="eyebrow">Crédito controlado por evento e mesa</span>
           <h1>Vouchers</h1>
-          <p>Emita créditos, acompanhe saldos individuais e audite cada uso ou restituição.</p>
+          <p>
+            Emita créditos, vincule-os a uma mesa e acompanhe saldos sem permitir uso em outro
+            atendimento.
+          </p>
         </div>
         <button
           className="button button--secondary"
@@ -58,12 +74,12 @@ export function VouchersPage(): React.JSX.Element {
           <strong>{formatMoney(availableCents)}</strong>
         </article>
         <article className="summary-card">
-          <span>Cancelados</span>
-          <strong>{cancelledVouchers.length}</strong>
+          <span>Mesas cadastradas</span>
+          <strong>{servicePoints.length}</strong>
         </article>
         <article className="summary-card">
-          <span>Movimentações</span>
-          <strong>{transactions.length}</strong>
+          <span>Cancelados</span>
+          <strong>{cancelledVouchers.length}</strong>
         </article>
       </div>
 
@@ -80,27 +96,62 @@ export function VouchersPage(): React.JSX.Element {
       {hasActiveEvent ? (
         <div className="voucher-layout">
           <article className="panel">
-            <VoucherForm busy={busy} onSubmit={createVoucher} />
+            <VoucherForm busy={busy} onSubmit={createVoucher} servicePoints={servicePoints} />
           </article>
           <div className="voucher-list" aria-live="polite">
             {loading ? <div className="route-state">Carregando vouchers…</div> : null}
             {!loading && vouchers.length === 0 ? (
               <div className="empty-state">
                 <Ticket size={32} aria-hidden="true" />
-                <h2>Nenhum voucher emitido</h2>
-                <p>Emita o primeiro crédito para o evento ativo.</p>
+                <h2>Nenhum voucher ativo no cadastro</h2>
+                <p>Emita o primeiro crédito para uma mesa do evento.</p>
               </div>
             ) : null}
             {vouchers.map((voucher) => (
               <VoucherCard
                 busy={busy}
+                hasUsage={transactions.some(
+                  (transaction) =>
+                    transaction.voucherId === voucher.id && transaction.type === 'redemption',
+                )}
                 key={voucher.id}
+                onAddBalance={addBalance}
                 onChangeStatus={changeStatus}
+                onDelete={deleteVoucher}
+                onUpdate={updateVoucher}
+                servicePoints={servicePoints}
                 voucher={voucher}
               />
             ))}
           </div>
         </div>
+      ) : null}
+
+      {hasActiveEvent && deletedVouchers.length > 0 ? (
+        <details className="panel voucher-deleted-list">
+          <summary>
+            <span>
+              <Trash2 size={17} aria-hidden="true" />
+              Excluídos
+            </span>
+            <strong>{deletedVouchers.length}</strong>
+          </summary>
+          <div className="voucher-list">
+            {deletedVouchers.map((voucher) => (
+              <VoucherCard
+                busy={busy}
+                hasUsage
+                key={voucher.id}
+                onAddBalance={addBalance}
+                onChangeStatus={changeStatus}
+                onDelete={deleteVoucher}
+                onUpdate={updateVoucher}
+                servicePoints={servicePoints}
+                voucher={voucher}
+              />
+            ))}
+          </div>
+        </details>
       ) : null}
 
       {hasActiveEvent ? <VoucherHistory transactions={transactions} /> : null}
