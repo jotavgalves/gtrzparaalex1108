@@ -126,11 +126,15 @@ describe('product administration', () => {
       status: 'paid',
       items: [{ itemName: 'Produto histórico', quantity: 1, unitPriceCents: 1000 }],
     });
-    expect(database.sqlite.prepare('SELECT id FROM products WHERE id = ?').get(productId)).toBeUndefined();
+    expect(
+      database.sqlite.prepare('SELECT id FROM products WHERE id = ?').get(productId),
+    ).toBeUndefined();
 
     cancelOrder(database, { orderId, reason: 'Cancelamento posterior da venda histórica' });
     expect(getOrder(database, orderId).status).toBe('cancelled');
-    expect(database.sqlite.prepare('SELECT id FROM products WHERE id = ?').get(productId)).toBeUndefined();
+    expect(
+      database.sqlite.prepare('SELECT id FROM products WHERE id = ?').get(productId),
+    ).toBeUndefined();
     database.close();
   });
 
@@ -149,7 +153,9 @@ describe('product administration', () => {
       }),
     ).toMatchObject({ deleted: true, refundedOrdersCount: 1, preservedHistoricalOrdersCount: 0 });
     expect(getOrder(database, orderId).status).toBe('cancelled');
-    expect(database.sqlite.prepare('SELECT id FROM products WHERE id = ?').get(productId)).toBeUndefined();
+    expect(
+      database.sqlite.prepare('SELECT id FROM products WHERE id = ?').get(productId),
+    ).toBeUndefined();
     database.close();
   });
 
@@ -160,7 +166,12 @@ describe('product administration', () => {
     recordStockMovement(database, { productId, type: 'purchase', quantity: 2 });
     const table = createServicePoint(database, { label: 'Mesa aberta', type: 'table' });
     const order = openOrder(database, table.id);
-    addOrderItem(database, { orderId: order.id, itemKind: 'product', itemId: productId, quantity: 1 });
+    addOrderItem(database, {
+      orderId: order.id,
+      itemKind: 'product',
+      itemId: productId,
+      quantity: 1,
+    });
 
     expect(() =>
       deleteInventoryProduct(database, {

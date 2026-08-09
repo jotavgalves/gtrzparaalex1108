@@ -100,7 +100,10 @@ export function useInventory(): InventoryViewState {
   }, []);
   const deleteProduct = useCallback(
     async (input: DeleteProductInput): Promise<void> => {
-      await run(() => window.gtrz.inventory.deleteProduct(input), 'Produto excluído definitivamente.');
+      await run(
+        () => window.gtrz.inventory.deleteProduct(input),
+        'Produto excluído definitivamente.',
+      );
     },
     [run],
   );

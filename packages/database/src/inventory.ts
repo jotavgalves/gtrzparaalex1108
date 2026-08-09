@@ -361,7 +361,8 @@ export function updateInventoryProduct(
   requireProduction(database);
   const current = requireProductRow(database, input.productId);
   const category = requireCategory(database, input.categoryId);
-  if (!category.active) throw new Error('Não é possível mover o produto para uma categoria inativa.');
+  if (!category.active)
+    throw new Error('Não é possível mover o produto para uma categoria inativa.');
   const name = input.name.trim();
   requireUniqueName(database, 'products', name, input.productId);
   const presentation = getProductPresentation(database, input.productId);
@@ -386,7 +387,8 @@ export function updateInventoryProduct(
         input.productId,
       );
     setProductPresentation(database, input.productId, {
-      imageDataUrl: input.imageDataUrl === undefined ? presentation.imageDataUrl : input.imageDataUrl,
+      imageDataUrl:
+        input.imageDataUrl === undefined ? presentation.imageDataUrl : input.imageDataUrl,
       fallbackIcon: input.fallbackIcon ?? presentation.fallbackIcon,
     });
     appendAudit(database, {

@@ -67,16 +67,19 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
   });
   ipcMain.handle(IPC_CHANNELS.inventoryRecordMovement, (_event, payload: unknown) => {
     const input = recordStockMovementInputSchema.parse(payload);
-    const movementInput = input.note === undefined ? {
-      productId: input.productId,
-      type: input.type,
-      quantity: input.quantity,
-    } : {
-      productId: input.productId,
-      type: input.type,
-      quantity: input.quantity,
-      note: input.note,
-    };
+    const movementInput =
+      input.note === undefined
+        ? {
+            productId: input.productId,
+            type: input.type,
+            quantity: input.quantity,
+          }
+        : {
+            productId: input.productId,
+            type: input.type,
+            quantity: input.quantity,
+            note: input.note,
+          };
     return inventoryProductSchema.parse(recordStockMovement(options.getDatabase(), movementInput));
   });
   ipcMain.handle(IPC_CHANNELS.inventoryListTransfers, () => {
@@ -84,19 +87,24 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
   });
   ipcMain.handle(IPC_CHANNELS.inventoryTransferStock, (_event, payload: unknown) => {
     const input = transferStockInputSchema.parse(payload);
-    const transferInput = input.note === undefined ? {
-      productId: input.productId,
-      sourceEventId: input.sourceEventId,
-      destinationEventId: input.destinationEventId,
-      quantity: input.quantity,
-    } : {
-      productId: input.productId,
-      sourceEventId: input.sourceEventId,
-      destinationEventId: input.destinationEventId,
-      quantity: input.quantity,
-      note: input.note,
-    };
-    return stockTransferSchema.parse(transferStockBetweenEvents(options.getDatabase(), transferInput));
+    const transferInput =
+      input.note === undefined
+        ? {
+            productId: input.productId,
+            sourceEventId: input.sourceEventId,
+            destinationEventId: input.destinationEventId,
+            quantity: input.quantity,
+          }
+        : {
+            productId: input.productId,
+            sourceEventId: input.sourceEventId,
+            destinationEventId: input.destinationEventId,
+            quantity: input.quantity,
+            note: input.note,
+          };
+    return stockTransferSchema.parse(
+      transferStockBetweenEvents(options.getDatabase(), transferInput),
+    );
   });
   ipcMain.handle(IPC_CHANNELS.inventoryPreviewProductDeletion, (_event, productId: unknown) => {
     return productDeletionImpactSchema.parse(
