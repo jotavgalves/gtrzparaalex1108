@@ -1,13 +1,21 @@
 import { ipcRenderer } from 'electron';
 
 import {
+  addVoucherBalanceInputSchema,
   changeVoucherStatusInputSchema,
   createVoucherInputSchema,
+  deleteVoucherInputSchema,
+  deleteVoucherResultSchema,
   IPC_CHANNELS,
+  updateVoucherInputSchema,
   voucherSchema,
   voucherStateSchema,
+  type AddVoucherBalanceInput,
   type ChangeVoucherStatusInput,
   type CreateVoucherInput,
+  type DeleteVoucherInput,
+  type DeleteVoucherResult,
+  type UpdateVoucherInput,
   type Voucher,
   type VoucherApi,
   type VoucherState,
@@ -32,5 +40,26 @@ export const voucherApi: VoucherApi = {
       parsedInput,
     );
     return voucherSchema.parse(payload);
+  },
+
+  async update(input: UpdateVoucherInput): Promise<Voucher> {
+    const parsedInput = updateVoucherInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.vouchersUpdate, parsedInput);
+    return voucherSchema.parse(payload);
+  },
+
+  async addBalance(input: AddVoucherBalanceInput): Promise<Voucher> {
+    const parsedInput = addVoucherBalanceInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.vouchersAddBalance,
+      parsedInput,
+    );
+    return voucherSchema.parse(payload);
+  },
+
+  async delete(input: DeleteVoucherInput): Promise<DeleteVoucherResult> {
+    const parsedInput = deleteVoucherInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.vouchersDelete, parsedInput);
+    return deleteVoucherResultSchema.parse(payload);
   },
 };
