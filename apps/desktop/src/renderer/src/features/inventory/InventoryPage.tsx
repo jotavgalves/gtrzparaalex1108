@@ -160,14 +160,18 @@ export function InventoryPage(): React.JSX.Element {
         <label className="inventory-search">
           <Search size={17} aria-hidden="true" />
           <input
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+            }}
             placeholder="Buscar produto ou categoria"
             value={search}
           />
         </label>
         <select
           aria-label="Filtrar por tipo"
-          onChange={(event) => setKind(event.target.value as ProductKind | 'all')}
+          onChange={(event) => {
+            setKind(event.target.value as ProductKind | 'all');
+          }}
           value={kind}
         >
           <option value="all">Todos os tipos</option>
@@ -176,7 +180,9 @@ export function InventoryPage(): React.JSX.Element {
         </select>
         <select
           aria-label="Filtrar por categoria"
-          onChange={(event) => setCategoryId(event.target.value)}
+          onChange={(event) => {
+            setCategoryId(event.target.value);
+          }}
           value={categoryId}
         >
           <option value="all">Todas as categorias</option>
