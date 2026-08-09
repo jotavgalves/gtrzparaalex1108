@@ -12,8 +12,17 @@ function formatMoney(cents: number): string {
 }
 
 export function ExpensesPage(): React.JSX.Element {
-  const { state, loading, busy, error, message, reload, createExpense, cancelExpense } =
-    useExpenses();
+  const {
+    state,
+    loading,
+    busy,
+    error,
+    message,
+    reload,
+    createExpense,
+    cancelExpense,
+    deleteExpense,
+  } = useExpenses();
   const expenses = state?.expenses ?? [];
   const activeExpenses = expenses.filter((expense) => expense.status === 'active');
   const cancelledExpenses = expenses.filter((expense) => expense.status === 'cancelled');
@@ -28,7 +37,7 @@ export function ExpensesPage(): React.JSX.Element {
         <div>
           <span className="eyebrow">Saídas efetivamente pagas</span>
           <h1>Despesas</h1>
-          <p>Registre gastos do evento e mantenha cancelamentos preservados na auditoria.</p>
+          <p>Registre gastos, cancele quando necessário ou exclua um lançamento incorreto.</p>
         </div>
         <button
           className="button button--secondary"
@@ -92,6 +101,7 @@ export function ExpensesPage(): React.JSX.Element {
                 expense={expense}
                 key={expense.id}
                 onCancel={cancelExpense}
+                onDelete={deleteExpense}
               />
             ))}
           </div>
