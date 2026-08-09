@@ -5,6 +5,8 @@ import {
   cashStateSchema,
   closeCashRegisterInputSchema,
   createExpenseInputSchema,
+  deleteExpenseInputSchema,
+  expenseDeletionResultSchema,
   expenseSchema,
   expenseStateSchema,
   IPC_CHANNELS,
@@ -15,6 +17,7 @@ import {
   cancelExpense,
   closeCashRegister,
   createExpense,
+  deleteExpense,
   getCashState,
   getExpenseState,
   openCashRegister,
@@ -34,6 +37,7 @@ const FINANCE_CHANNELS = [
   IPC_CHANNELS.expensesGetState,
   IPC_CHANNELS.expensesCreate,
   IPC_CHANNELS.expensesCancel,
+  IPC_CHANNELS.expensesDelete,
 ] as const;
 
 export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): void {
@@ -91,5 +95,10 @@ export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): 
   ipcMain.handle(IPC_CHANNELS.expensesCancel, (_event, payload: unknown) => {
     const input = cancelExpenseInputSchema.parse(payload);
     return expenseSchema.parse(cancelExpense(options.getDatabase(), input));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.expensesDelete, (_event, payload: unknown) => {
+    const input = deleteExpenseInputSchema.parse(payload);
+    return expenseDeletionResultSchema.parse(deleteExpense(options.getDatabase(), input));
   });
 }
