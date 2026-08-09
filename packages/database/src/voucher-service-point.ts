@@ -92,7 +92,11 @@ export function setVoucherServicePointBinding(
   }
 
   const current = getVoucherServicePointBinding(database, input.voucherId);
-  if (current?.servicePointId !== undefined && current.servicePointId !== target.id && current.active) {
+  if (
+    current?.servicePointId !== undefined &&
+    current.servicePointId !== target.id &&
+    current.active
+  ) {
     throw new Error(
       `Este voucher permanece vinculado a ${current.servicePointLabel} enquanto essa mesa existir.`,
     );
