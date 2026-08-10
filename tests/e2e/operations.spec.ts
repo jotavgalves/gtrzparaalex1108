@@ -51,7 +51,9 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
     await expect(productCard.getByText('5 un.', { exact: true })).toBeVisible();
 
     await window.getByRole('link', { name: 'Mesas e balcão' }).click();
-    await expect(window.getByRole('heading', { name: 'Mesas e balcão', exact: true })).toBeVisible();
+    await expect(
+      window.getByRole('heading', { name: 'Mesas e balcão', exact: true }),
+    ).toBeVisible();
     await window.getByPlaceholder('Ex.: Mesa 12').fill(tableName);
     await window.getByRole('button', { name: 'Criar mesa' }).click();
 
