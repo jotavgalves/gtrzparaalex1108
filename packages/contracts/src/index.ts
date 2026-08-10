@@ -55,6 +55,7 @@ export const IPC_CHANNELS = {
   operationsCreateServicePoint: 'operations:create-service-point',
   operationsOpenOrder: 'operations:open-order',
   operationsGetOrder: 'operations:get-order',
+  operationsStartOrderWithItem: 'operations:start-order-with-item',
   operationsAddItem: 'operations:add-item',
   operationsRemoveItem: 'operations:remove-item',
   operationsBindVoucher: 'operations:bind-voucher',
