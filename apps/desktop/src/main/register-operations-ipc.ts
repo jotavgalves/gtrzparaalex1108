@@ -13,6 +13,7 @@ import {
   orderSchema,
   removeOrderItemInputSchema,
   servicePointSchema,
+  startOrderWithItemInputSchema,
   unbindOrderVoucherInputSchema,
 } from '@gtrz/contracts';
 import {
@@ -25,6 +26,7 @@ import {
   getOrder,
   openOrder,
   removeOrderItem,
+  startOrderWithItem,
   type DatabaseCloseOrderPaymentInput,
   type DatabaseContext,
   unbindOrderVoucher,
@@ -39,6 +41,7 @@ const OPERATION_CHANNELS = [
   IPC_CHANNELS.operationsCreateServicePoint,
   IPC_CHANNELS.operationsOpenOrder,
   IPC_CHANNELS.operationsGetOrder,
+  IPC_CHANNELS.operationsStartOrderWithItem,
   IPC_CHANNELS.operationsAddItem,
   IPC_CHANNELS.operationsRemoveItem,
   IPC_CHANNELS.operationsBindVoucher,
@@ -85,6 +88,11 @@ export function registerOperationsIpcHandlers(options: RegisterOperationsIpcOpti
   ipcMain.handle(IPC_CHANNELS.operationsGetOrder, (_event, payload: unknown) => {
     const input = getOrderInputSchema.parse(payload);
     return orderSchema.parse(getOrder(options.getDatabase(), input.orderId));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.operationsStartOrderWithItem, (_event, payload: unknown) => {
+    const input = startOrderWithItemInputSchema.parse(payload);
+    return orderSchema.parse(startOrderWithItem(options.getDatabase(), input));
   });
 
   ipcMain.handle(IPC_CHANNELS.operationsAddItem, (_event, payload: unknown) => {
