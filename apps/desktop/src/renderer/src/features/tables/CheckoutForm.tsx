@@ -1,8 +1,17 @@
-import { CreditCard, Plus, Trash2, WalletCards } from 'lucide-react';
+import { WalletCards } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { CloseOrderInput, Order, PaymentMethod } from '@gtrz/contracts';
 
+import {
+  formatMoney,
+  formatMoneyInput,
+  newPayment,
+  parseMoney,
+  type PaymentDraft,
+} from './checkout-payment-utils';
+import { MixedPaymentPanel } from './MixedPaymentPanel';
+import { SimplePaymentPanel } from './SimplePaymentPanel';
 import { VoucherCheckout } from './VoucherCheckout';
 
 interface CheckoutFormProps {
@@ -13,52 +22,7 @@ interface CheckoutFormProps {
   readonly onClose: (input: Omit<CloseOrderInput, 'orderId'>) => Promise<void>;
 }
 
-interface PaymentDraft {
-  readonly id: string;
-  readonly method: PaymentMethod;
-  readonly amount: string;
-  readonly received: string;
-}
-
 type CheckoutMode = 'simple' | 'mixed';
-
-const PAYMENT_LABELS: Readonly<Record<PaymentMethod, string>> = {
-  cash: 'Dinheiro',
-  pix: 'PIX',
-  'credit-card': 'Crédito',
-  'debit-card': 'Débito',
-};
-
-function formatMoney(cents: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(cents / 100);
-}
-
-function formatMoneyInput(cents: number): string {
-  return (cents / 100).toFixed(2).replace('.', ',');
-}
-
-function parseMoney(value: string): number {
-  const trimmed = value.trim().replaceAll(/\s/gu, '');
-  if (trimmed.length === 0) return 0;
-
-  const normalized = trimmed.includes(',')
-    ? trimmed.replaceAll('.', '').replace(',', '.')
-    : trimmed;
-  const amount = Number(normalized);
-  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
-}
-
-function newPayment(method: PaymentMethod = 'cash'): PaymentDraft {
-  return {
-    id: `${String(Date.now())}-${Math.random().toString(16).slice(2)}`,
-    method,
-    amount: '',
-    received: '',
-  };
-}
 
 export function CheckoutForm({
   order,
@@ -142,41 +106,45 @@ export function CheckoutForm({
     );
   };
 
+  const submitCheckout = (): void => {
+    if (!canSubmit) return;
+
+    const normalizedPayments =
+      mode === 'simple'
+        ? remainingAfterVoucherCents === 0
+          ? []
+          : simpleMethod === 'cash' && simpleReceivedCents > 0
+            ? [
+                {
+                  method: simpleMethod,
+                  amountCents: remainingAfterVoucherCents,
+                  receivedCents: simpleReceivedCents,
+                },
+              ]
+            : [{ method: simpleMethod, amountCents: remainingAfterVoucherCents }]
+        : payments
+            .map((payment) => {
+              const amountCents = parseMoney(payment.amount);
+              const receivedCents = parseMoney(payment.received);
+              return payment.method === 'cash' && receivedCents > 0
+                ? { method: payment.method, amountCents, receivedCents }
+                : { method: payment.method, amountCents };
+            })
+            .filter((payment) => payment.amountCents > 0);
+    const voucherUses =
+      allocation !== null && voucherCents > 0
+        ? [{ code: allocation.code, amountCents: voucherCents }]
+        : [];
+
+    void onClose({ discountCents, payments: normalizedPayments, voucherUses });
+  };
+
   return (
     <form
       className="checkout-form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!canSubmit) return;
-
-        const normalizedPayments =
-          mode === 'simple'
-            ? remainingAfterVoucherCents === 0
-              ? []
-              : simpleMethod === 'cash' && simpleReceivedCents > 0
-                ? [
-                    {
-                      method: simpleMethod,
-                      amountCents: remainingAfterVoucherCents,
-                      receivedCents: simpleReceivedCents,
-                    },
-                  ]
-                : [{ method: simpleMethod, amountCents: remainingAfterVoucherCents }]
-            : payments
-                .map((payment) => {
-                  const amountCents = parseMoney(payment.amount);
-                  const receivedCents = parseMoney(payment.received);
-                  return payment.method === 'cash' && receivedCents > 0
-                    ? { method: payment.method, amountCents, receivedCents }
-                    : { method: payment.method, amountCents };
-                })
-                .filter((payment) => payment.amountCents > 0);
-        const voucherUses =
-          allocation !== null && voucherCents > 0
-            ? [{ code: allocation.code, amountCents: voucherCents }]
-            : [];
-
-        void onClose({ discountCents, payments: normalizedPayments, voucherUses });
+        submitCheckout();
       }}
     >
       <div className="checkout-form__heading">
@@ -257,154 +225,30 @@ export function CheckoutForm({
       </div>
 
       {mode === 'simple' ? (
-        <div className="simple-payment-panel">
-          {remainingAfterVoucherCents === 0 ? (
-            <p className="operation-empty">O voucher cobre todo o valor desta venda.</p>
-          ) : (
-            <>
-              <label className="form-field">
-                <span>Forma de pagamento</span>
-                <select
-                  aria-label="Forma de pagamento"
-                  disabled={busy}
-                  onChange={(event) => {
-                    setSimpleMethod(event.target.value as PaymentMethod);
-                    setSimpleReceived('');
-                  }}
-                  value={simpleMethod}
-                >
-                  {Object.entries(PAYMENT_LABELS).map(([method, label]) => (
-                    <option key={method} value={method}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="simple-payment-panel__amount">
-                <span>Valor cobrado</span>
-                <strong>{formatMoney(remainingAfterVoucherCents)}</strong>
-                <small>Aplicado automaticamente ao saldo da venda.</small>
-              </div>
-              {simpleMethod === 'cash' ? (
-                <label className="form-field">
-                  <span>Valor recebido, opcional</span>
-                  <input
-                    aria-invalid={simpleCashInvalid}
-                    aria-label="Valor recebido"
-                    disabled={busy}
-                    inputMode="decimal"
-                    onChange={(event) => {
-                      setSimpleReceived(event.target.value);
-                    }}
-                    placeholder={`Em branco = ${formatMoney(remainingAfterVoucherCents)}`}
-                    value={simpleReceived}
-                  />
-                  <small className={simpleCashInvalid ? 'checkout-warning' : undefined}>
-                    {simpleCashInvalid
-                      ? `Faltam ${formatMoney(remainingAfterVoucherCents - simpleReceivedCents)}`
-                      : `Troco: ${formatMoney(simpleChangeCents)}`}
-                  </small>
-                </label>
-              ) : (
-                <span className="payment-row__digital simple-payment-panel__digital">
-                  <CreditCard size={16} aria-hidden="true" />
-                  Cobrança exata, sem troco
-                </span>
-              )}
-            </>
-          )}
-        </div>
+        <SimplePaymentPanel
+          amountCents={remainingAfterVoucherCents}
+          busy={busy}
+          cashInvalid={simpleCashInvalid}
+          method={simpleMethod}
+          onMethodChange={(method) => {
+            setSimpleMethod(method);
+            setSimpleReceived('');
+          }}
+          onReceivedChange={setSimpleReceived}
+          received={simpleReceived}
+        />
       ) : (
-        <>
-          <div className="payment-list">
-            {payments.map((payment, index) => {
-              const amountCents = parseMoney(payment.amount);
-              const receivedCents = parseMoney(payment.received);
-              const changeCents = Math.max(receivedCents - amountCents, 0);
-              const receivedIsInsufficient =
-                payment.method === 'cash' && receivedCents > 0 && receivedCents < amountCents;
-
-              return (
-                <div className="payment-row" key={payment.id}>
-                  <select
-                    aria-label={`Forma de pagamento ${String(index + 1)}`}
-                    disabled={busy}
-                    onChange={(event) => {
-                      updatePayment(payment.id, {
-                        method: event.target.value as PaymentMethod,
-                        received: '',
-                      });
-                    }}
-                    value={payment.method}
-                  >
-                    {Object.entries(PAYMENT_LABELS).map(([method, label]) => (
-                      <option key={method} value={method}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    aria-label={`Valor do pagamento ${String(index + 1)}`}
-                    disabled={busy}
-                    inputMode="decimal"
-                    onChange={(event) => {
-                      updatePayment(payment.id, { amount: event.target.value });
-                    }}
-                    placeholder="Valor aplicado"
-                    value={payment.amount}
-                  />
-                  {payment.method === 'cash' ? (
-                    <div className="cash-received-field">
-                      <input
-                        aria-invalid={receivedIsInsufficient}
-                        aria-label={`Valor recebido ${String(index + 1)}`}
-                        disabled={busy}
-                        inputMode="decimal"
-                        onChange={(event) => {
-                          updatePayment(payment.id, { received: event.target.value });
-                        }}
-                        placeholder="Valor recebido"
-                        value={payment.received}
-                      />
-                      <small className={receivedIsInsufficient ? 'checkout-warning' : undefined}>
-                        {receivedIsInsufficient
-                          ? `Faltam ${formatMoney(amountCents - receivedCents)}`
-                          : `Troco: ${formatMoney(changeCents)}`}
-                      </small>
-                    </div>
-                  ) : (
-                    <span className="payment-row__digital">
-                      <CreditCard size={16} aria-hidden="true" />
-                      Sem troco
-                    </span>
-                  )}
-                  <button
-                    aria-label={`Remover pagamento ${String(index + 1)}`}
-                    className="icon-button"
-                    disabled={busy || payments.length === 1}
-                    onClick={() => {
-                      setPayments((current) => current.filter((item) => item.id !== payment.id));
-                    }}
-                    type="button"
-                  >
-                    <Trash2 size={16} aria-hidden="true" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          <button
-            className="button button--secondary checkout-add-payment"
-            disabled={busy}
-            onClick={() => {
-              setPayments((current) => [...current, newPayment('pix')]);
-            }}
-            type="button"
-          >
-            <Plus size={16} aria-hidden="true" />
-            Adicionar pagamento
-          </button>
-        </>
+        <MixedPaymentPanel
+          busy={busy}
+          onAdd={() => {
+            setPayments((current) => [...current, newPayment('pix')]);
+          }}
+          onRemove={(id) => {
+            setPayments((current) => current.filter((payment) => payment.id !== id));
+          }}
+          onUpdate={updatePayment}
+          payments={payments}
+        />
       )}
 
       {totalChangeCents > 0 ? (
