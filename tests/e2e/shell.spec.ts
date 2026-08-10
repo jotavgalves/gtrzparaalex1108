@@ -91,7 +91,7 @@ test('SMK-EST-001 — cadastra produto, movimenta saldo e protege custos no Caix
     await expect(window.getByText(eventName, { exact: true }).first()).toBeVisible();
 
     await window.getByRole('link', { name: 'Estoque' }).click();
-    await expect(window.getByRole('heading', { name: 'Estoque' })).toBeVisible();
+    await expect(window.getByRole('heading', { name: 'Estoque', exact: true })).toBeVisible();
 
     await window.getByPlaceholder('Ex.: Cervejas').fill(categoryName);
     await window.getByRole('button', { name: 'Criar categoria' }).click();
@@ -109,29 +109,36 @@ test('SMK-EST-001 — cadastra produto, movimenta saldo e protege custos no Caix
 
     let productCard = window.locator('article.inventory-card').filter({ hasText: productName });
     await expect(productCard).toBeVisible();
-    await expect(productCard.getByText('R$ 4,00')).toBeVisible();
+    await expect(productCard.getByText('Custo un.', { exact: true })).toBeVisible();
+    await expect(productCard.getByText('R$ 6,00', { exact: true })).toBeVisible();
     await expect(productCard.getByText('40.00%')).toBeVisible();
 
-    await productCard.getByRole('button', { name: 'Movimentar' }).click();
+    await productCard.getByRole('button', { name: 'Entrada', exact: true }).click();
     const movementForm = window.locator('form.movement-form');
     await movementForm.getByLabel('Quantidade', { exact: true }).fill('6');
-    await movementForm.getByRole('button', { name: 'Registrar movimento' }).click();
+    await movementForm.getByRole('button', { name: 'Registrar entrada' }).click();
 
     productCard = window.locator('article.inventory-card').filter({ hasText: productName });
-    await expect(productCard.getByText('6 un.')).toBeVisible();
+    await expect(productCard.getByText('6 un.', { exact: true })).toBeVisible();
+    await expect(productCard.getByText('R$ 36,00', { exact: true })).toHaveCount(2);
+    await expect(
+      productCard.getByRole('button', { name: 'Baixar estoque · 6 un.', exact: true }),
+    ).toBeVisible();
 
     await window.getByRole('button', { name: 'Usar perfil Caixa' }).click();
     await expect(window.getByText('Caixa', { exact: true })).toBeVisible();
     await window.getByRole('link', { name: 'Estoque' }).click();
-    await expect(window.getByRole('heading', { name: 'Estoque' })).toBeVisible();
+    await expect(window.getByRole('heading', { name: 'Estoque', exact: true })).toBeVisible();
 
     productCard = window.locator('article.inventory-card').filter({ hasText: productName });
     await expect(productCard).toBeVisible();
-    await expect(productCard.getByText('R$ 10,00')).toBeVisible();
-    await expect(productCard.getByText('Lucro bruto')).toHaveCount(0);
-    await expect(productCard.getByText('Custo')).toHaveCount(0);
+    await expect(productCard.getByText('R$ 10,00', { exact: true })).toBeVisible();
+    await expect(productCard.getByText('Custo un.', { exact: true })).toHaveCount(0);
+    await expect(productCard.getByText('Valor atual estoque', { exact: true })).toHaveCount(0);
+    await expect(productCard.getByText('Aporte líquido', { exact: true })).toHaveCount(0);
     await expect(productCard.getByRole('button', { name: 'Editar' })).toHaveCount(0);
-    await expect(productCard.getByRole('button', { name: 'Movimentar' })).toHaveCount(0);
+    await expect(productCard.getByRole('button', { name: 'Entrada', exact: true })).toHaveCount(0);
+    await expect(productCard.getByRole('button', { name: /Baixar estoque/u })).toHaveCount(0);
   } finally {
     await electronApplication.close();
   }
