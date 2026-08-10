@@ -60,15 +60,23 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
     const tableButton = window.getByRole('button', { name: new RegExp(tableName, 'u') });
     await expect(tableButton).toBeVisible();
     await tableButton.click();
+    await expect(
+      window.getByText(
+        'Nenhuma comanda aberta. Adicionar o primeiro produto ou combo inicia a venda.',
+        { exact: true },
+      ),
+    ).toBeVisible();
 
     const catalogItem = window.getByRole('button', { name: new RegExp(productName, 'u') });
     await expect(catalogItem).toBeVisible();
     await catalogItem.click();
     await expect(window.getByText(productName, { exact: true }).last()).toBeVisible();
     await expect(window.getByText('R$ 10,00', { exact: true }).last()).toBeVisible();
+    await expect(window.getByText('Valor cobrado', { exact: true })).toBeVisible();
+    await expect(window.getByText('R$ 10,00', { exact: true }).last()).toBeVisible();
 
-    await window.getByLabel('Valor do pagamento 1').fill('10.00');
-    await window.getByLabel('Valor recebido 1').fill('20.00');
+    await window.getByLabel('Valor recebido', { exact: true }).fill('20.00');
+    await expect(window.getByText('Troco: R$ 10,00', { exact: true })).toBeVisible();
     await window.getByRole('button', { name: 'Concluir venda' }).click();
     await expect(window.getByText('Venda concluída e estoque atualizado.')).toBeVisible();
     await expect(window.getByRole('button', { name: new RegExp(tableName, 'u') })).toContainText(
@@ -79,8 +87,27 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
     productCard = window.locator('article.inventory-card').filter({ hasText: productName });
     await expect(productCard.getByText('4 un.', { exact: true })).toBeVisible();
 
+    await window.getByRole('button', { name: 'Usar perfil Caixa' }).click();
+    await expect(window.getByText('Caixa', { exact: true })).toBeVisible();
     await window.getByRole('link', { name: 'Mesas e balcão' }).click();
-    const recentOrder = window.locator('article.recent-order-card').filter({ hasText: tableName });
+    const cashierHistory = window.locator('details.history-drawer').filter({
+      hasText: 'Histórico de vendas do evento',
+    });
+    await expect(cashierHistory).not.toHaveAttribute('open', '');
+    await cashierHistory.locator('summary').click();
+    let recentOrder = cashierHistory.locator('article.recent-order-card').filter({ hasText: tableName });
+    await expect(recentOrder).toContainText('Paga');
+    await expect(recentOrder.getByRole('button', { name: 'Estornar venda' })).toHaveCount(0);
+
+    await window.getByPlaceholder('Digite a senha').fill('121225');
+    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
+    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
+    await window.getByRole('link', { name: 'Mesas e balcão' }).click();
+    const productionHistory = window.locator('details.history-drawer').filter({
+      hasText: 'Histórico de vendas do evento',
+    });
+    await productionHistory.locator('summary').click();
+    recentOrder = productionHistory.locator('article.recent-order-card').filter({ hasText: tableName });
     await expect(recentOrder).toContainText('Paga');
     await recentOrder.getByPlaceholder('Ex.: lançamento duplicado').fill('Pagamento duplicado');
     await recentOrder.getByRole('button', { name: 'Estornar venda' }).click();
