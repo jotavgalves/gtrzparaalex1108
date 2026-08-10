@@ -38,10 +38,10 @@ test('SMK-CMB-001 — calcula combo pelo estoque dos componentes e protege custo
     await productForm.getByRole('button', { name: 'Cadastrar produto' }).click();
 
     let productCard = window.locator('article.inventory-card').filter({ hasText: productName });
-    await productCard.getByRole('button', { name: 'Movimentar' }).click();
+    await productCard.getByRole('button', { name: 'Entrada', exact: true }).click();
     const movementForm = window.locator('form.movement-form');
     await movementForm.getByLabel('Quantidade', { exact: true }).fill('6');
-    await movementForm.getByRole('button', { name: 'Registrar movimento' }).click();
+    await movementForm.getByRole('button', { name: 'Registrar entrada' }).click();
     productCard = window.locator('article.inventory-card').filter({ hasText: productName });
     await expect(productCard.getByText('6 un.', { exact: true })).toBeVisible();
 
