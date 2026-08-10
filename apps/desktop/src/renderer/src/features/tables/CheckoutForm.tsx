@@ -117,16 +117,12 @@ export function CheckoutForm({
       voucherCents > allocation.remainingBalanceCents ||
       voucherCents > totalCents);
   const simpleChangeCents =
-    simpleMethod === 'cash'
-      ? Math.max(simpleReceivedCents - remainingAfterVoucherCents, 0)
-      : 0;
+    simpleMethod === 'cash' ? Math.max(simpleReceivedCents - remainingAfterVoucherCents, 0) : 0;
   const mixedChangeCents = useMemo(
     () =>
       payments.reduce((total, payment) => {
         if (payment.method !== 'cash') return total;
-        return (
-          total + Math.max(parseMoney(payment.received) - parseMoney(payment.amount), 0)
-        );
+        return total + Math.max(parseMoney(payment.received) - parseMoney(payment.amount), 0);
       }, 0),
     [payments],
   );

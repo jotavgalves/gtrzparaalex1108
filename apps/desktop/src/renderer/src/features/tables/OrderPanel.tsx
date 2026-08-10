@@ -1,11 +1,6 @@
 import { ArrowLeft, ReceiptText, Trash2 } from 'lucide-react';
 
-import type {
-  CloseOrderInput,
-  OperationCatalogItem,
-  Order,
-  ServicePoint,
-} from '@gtrz/contracts';
+import type { CloseOrderInput, OperationCatalogItem, Order, ServicePoint } from '@gtrz/contracts';
 
 import { ProductVisual } from '../../shared/product/ProductVisual';
 import { CancellationForm } from './CancellationForm';

@@ -95,7 +95,9 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
     });
     await expect(cashierHistory).not.toHaveAttribute('open', '');
     await cashierHistory.locator('summary').click();
-    let recentOrder = cashierHistory.locator('article.recent-order-card').filter({ hasText: tableName });
+    let recentOrder = cashierHistory
+      .locator('article.recent-order-card')
+      .filter({ hasText: tableName });
     await expect(recentOrder).toContainText('Paga');
     await expect(recentOrder.getByRole('button', { name: 'Estornar venda' })).toHaveCount(0);
 
@@ -107,7 +109,9 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
       hasText: 'Histórico de vendas do evento',
     });
     await productionHistory.locator('summary').click();
-    recentOrder = productionHistory.locator('article.recent-order-card').filter({ hasText: tableName });
+    recentOrder = productionHistory
+      .locator('article.recent-order-card')
+      .filter({ hasText: tableName });
     await expect(recentOrder).toContainText('Paga');
     await recentOrder.getByPlaceholder('Ex.: lançamento duplicado').fill('Pagamento duplicado');
     await recentOrder.getByRole('button', { name: 'Estornar venda' }).click();

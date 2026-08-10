@@ -80,7 +80,9 @@ test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no e
       hasText: 'Histórico de vendas do evento',
     });
     await history.locator('summary').click();
-    const recentOrder = history.locator('article.recent-order-card').filter({ hasText: productName });
+    const recentOrder = history
+      .locator('article.recent-order-card')
+      .filter({ hasText: productName });
     await expect(recentOrder).toContainText('Paga');
     await recentOrder.getByPlaceholder('Ex.: lançamento duplicado').fill('Estorno voucher');
     await recentOrder.getByRole('button', { name: 'Estornar venda' }).click();
