@@ -1,6 +1,7 @@
 name: Qualidade e arquitetura
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
   push:
