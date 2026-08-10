@@ -17,6 +17,7 @@ export function TablesPage(): React.JSX.Element {
   const {
     state,
     order,
+    selectedServicePoint,
     loading,
     busy,
     error,
@@ -39,6 +40,10 @@ export function TablesPage(): React.JSX.Element {
   const openPoints = servicePoints.filter((item) => item.status === 'open');
   const openTotalCents = openPoints.reduce((total, item) => total + item.activeOrderTotalCents, 0);
   const availableItems = catalog.filter((item) => item.active && item.availableQuantity > 0).length;
+  const selectedHistory =
+    selectedServicePoint === null
+      ? []
+      : recentOrders.filter((item) => item.servicePointId === selectedServicePoint.id);
 
   return (
     <section className="feature-page">
@@ -85,7 +90,7 @@ export function TablesPage(): React.JSX.Element {
           <span>Selecione um evento aberto antes de operar mesas e vendas.</span>
         </div>
       ) : null}
-      {state?.activeEventId !== null && state !== null && order === null ? (
+      {state?.activeEventId !== null && state !== null && selectedServicePoint === null ? (
         <>
           {production ? (
             <article className="panel table-creation-panel">
@@ -103,25 +108,33 @@ export function TablesPage(): React.JSX.Element {
           {!loading ? (
             <ServicePointGrid busy={busy} onOpen={openServicePoint} servicePoints={servicePoints} />
           ) : null}
-          {production && !loading ? (
-            <RecentOrdersPanel busy={busy} onCancel={cancelOrder} orders={recentOrders} />
+          {!loading ? (
+            <RecentOrdersPanel
+              busy={busy}
+              canCancel={production}
+              onCancel={cancelOrder}
+              orders={recentOrders}
+              title="Histórico de vendas do evento"
+            />
           ) : null}
         </>
       ) : null}
-      {order === null ? null : (
+      {selectedServicePoint === null ? null : (
         <div className="operation-workspace">
           <CatalogPanel busy={busy} items={catalog} onAdd={addItem} />
           <OrderPanel
             busy={busy}
             catalog={catalog}
+            history={selectedHistory}
             onBack={clearOrder}
             onBindVoucher={bindVoucher}
-            onCancelOrder={(reason) => cancelOrder(order.id, reason)}
+            onCancelOrder={cancelOrder}
             onCloseOrder={closeCurrentOrder}
             onRemoveItem={removeItem}
             onUnbindVoucher={unbindVoucher}
             order={order}
             production={production}
+            servicePoint={selectedServicePoint}
           />
         </div>
       )}
