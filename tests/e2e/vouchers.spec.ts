@@ -64,10 +64,9 @@ test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no e
     await expect(voucherSelect.locator('option')).toHaveCount(2);
     await voucherSelect.selectOption(voucherCode);
     await expect(window.getByText('Saldo disponível', { exact: true })).toBeVisible();
-    await expect(window.getByText('R$ 10,00', { exact: true }).last()).toBeVisible();
     await window.getByLabel('Valor a utilizar').fill('4.00');
-    await window.getByLabel('Valor do pagamento 1').fill('6.00');
-    await window.getByLabel('Valor recebido 1').fill('10.00');
+    await expect(window.getByText('Saldo a pagar: R$ 6,00', { exact: false })).toBeVisible();
+    await window.getByLabel('Valor recebido', { exact: true }).fill('10.00');
     await expect(window.getByText('Troco: R$ 4,00', { exact: true })).toBeVisible();
     await window.getByRole('button', { name: 'Concluir venda' }).click();
     await expect(window.getByText('Venda concluída e estoque atualizado.')).toBeVisible();
@@ -77,9 +76,11 @@ test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no e
     await expect(voucherCard).toContainText('R$ 6,00');
 
     await window.getByRole('link', { name: 'Mesas e balcão' }).click();
-    const recentOrder = window
-      .locator('article.recent-order-card')
-      .filter({ hasText: productName });
+    const history = window.locator('details.history-drawer').filter({
+      hasText: 'Histórico de vendas do evento',
+    });
+    await history.locator('summary').click();
+    const recentOrder = history.locator('article.recent-order-card').filter({ hasText: productName });
     await expect(recentOrder).toContainText('Paga');
     await recentOrder.getByPlaceholder('Ex.: lançamento duplicado').fill('Estorno voucher');
     await recentOrder.getByRole('button', { name: 'Estornar venda' }).click();
