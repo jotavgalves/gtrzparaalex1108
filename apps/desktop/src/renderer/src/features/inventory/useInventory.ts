@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type {
   CreateProductInput,
+  DeleteProductInput,
   InventoryState,
+  ProductDeletionImpact,
   RecordStockMovementInput,
   UpdateProductInput,
 } from '@gtrz/contracts';
@@ -18,6 +20,8 @@ interface InventoryViewState {
   readonly createProduct: (input: CreateProductInput) => Promise<void>;
   readonly updateProduct: (input: UpdateProductInput) => Promise<void>;
   readonly recordMovement: (input: RecordStockMovementInput) => Promise<void>;
+  readonly previewDeletion: (productId: string) => Promise<ProductDeletionImpact>;
+  readonly deleteProduct: (input: DeleteProductInput) => Promise<void>;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -34,7 +38,6 @@ export function useInventory(): InventoryViewState {
   const reload = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
-
     try {
       setState(await window.gtrz.inventory.getState());
     } catch (loadError: unknown) {
@@ -49,11 +52,10 @@ export function useInventory(): InventoryViewState {
   }, [reload]);
 
   const run = useCallback(
-    async (operation: () => Promise<unknown>, successMessage: string) => {
+    async (operation: () => Promise<unknown>, successMessage: string): Promise<void> => {
       setBusy(true);
       setError(null);
       setMessage(null);
-
       try {
         await operation();
         await reload();
@@ -75,24 +77,33 @@ export function useInventory(): InventoryViewState {
     },
     [run],
   );
-
   const createProduct = useCallback(
     async (input: CreateProductInput): Promise<void> => {
       await run(() => window.gtrz.inventory.createProduct(input), 'Produto cadastrado.');
     },
     [run],
   );
-
   const updateProduct = useCallback(
     async (input: UpdateProductInput): Promise<void> => {
       await run(() => window.gtrz.inventory.updateProduct(input), 'Produto atualizado.');
     },
     [run],
   );
-
   const recordMovement = useCallback(
     async (input: RecordStockMovementInput): Promise<void> => {
       await run(() => window.gtrz.inventory.recordMovement(input), 'Estoque atualizado.');
+    },
+    [run],
+  );
+  const previewDeletion = useCallback(async (productId: string): Promise<ProductDeletionImpact> => {
+    return window.gtrz.inventory.previewDeletion(productId);
+  }, []);
+  const deleteProduct = useCallback(
+    async (input: DeleteProductInput): Promise<void> => {
+      await run(
+        () => window.gtrz.inventory.deleteProduct(input),
+        'Produto excluído definitivamente.',
+      );
     },
     [run],
   );
@@ -108,5 +119,7 @@ export function useInventory(): InventoryViewState {
     createProduct,
     updateProduct,
     recordMovement,
+    previewDeletion,
+    deleteProduct,
   };
 }

@@ -58,6 +58,8 @@ describe('inventory contracts', () => {
         quantity: 7,
         lowStock: false,
         financials: null,
+        imageDataUrl: null,
+        fallbackIcon: 'package',
         createdAt: 1_786_000_000_000,
         updatedAt: 1_786_000_000_000,
       }),

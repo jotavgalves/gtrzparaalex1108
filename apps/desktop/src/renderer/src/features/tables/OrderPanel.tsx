@@ -1,12 +1,14 @@
 import { ArrowLeft, ReceiptText, Trash2 } from 'lucide-react';
 
-import type { CloseOrderInput, Order } from '@gtrz/contracts';
+import type { CloseOrderInput, OperationCatalogItem, Order } from '@gtrz/contracts';
 
+import { ProductVisual } from '../../shared/product/ProductVisual';
 import { CancellationForm } from './CancellationForm';
 import { CheckoutForm } from './CheckoutForm';
 
 interface OrderPanelProps {
   readonly order: Order;
+  readonly catalog: readonly OperationCatalogItem[];
   readonly busy: boolean;
   readonly production: boolean;
   readonly onBack: () => void;
@@ -18,14 +20,12 @@ interface OrderPanelProps {
 }
 
 function formatMoney(cents: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(cents / 100);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
 export function OrderPanel({
   order,
+  catalog,
   busy,
   production,
   onBack,
@@ -61,35 +61,45 @@ export function OrderPanel({
         {order.items.length === 0 ? (
           <p className="operation-empty">Adicione produtos ou combos pelo catálogo.</p>
         ) : null}
-        {order.items.map((item) => (
-          <div className="order-item" key={item.id}>
-            <span>
-              <strong>{item.itemName}</strong>
-              <small>
-                {item.quantity} × {formatMoney(item.unitPriceCents)}
-              </small>
-            </span>
-            <strong>{formatMoney(item.totalCents)}</strong>
-            <button
-              aria-label={`Remover ${item.itemName}`}
-              className="icon-button"
-              disabled={busy}
-              onClick={() => {
-                void onRemoveItem(item.id);
-              }}
-              type="button"
-            >
-              <Trash2 size={16} aria-hidden="true" />
-            </button>
-          </div>
-        ))}
+        {order.items.map((item) => {
+          const catalogItem = catalog.find(
+            (candidate) => candidate.id === item.itemId && candidate.kind === item.itemKind,
+          );
+          return (
+            <div className="order-item" key={item.id}>
+              {catalogItem === undefined ? null : (
+                <ProductVisual
+                  alt={item.itemName}
+                  fallbackIcon={catalogItem.fallbackIcon}
+                  imageDataUrl={catalogItem.imageDataUrl}
+                  size="small"
+                />
+              )}
+              <span>
+                <strong>{item.itemName}</strong>
+                <small>
+                  {item.quantity} × {formatMoney(item.unitPriceCents)}
+                </small>
+              </span>
+              <strong>{formatMoney(item.totalCents)}</strong>
+              <button
+                aria-label={`Remover ${item.itemName}`}
+                className="icon-button"
+                disabled={busy}
+                onClick={() => void onRemoveItem(item.id)}
+                type="button"
+              >
+                <Trash2 size={16} aria-hidden="true" />
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="order-summary">
         <span>Subtotal</span>
         <strong>{formatMoney(order.subtotalCents)}</strong>
       </div>
-
       <CheckoutForm
         busy={busy}
         onBindVoucher={onBindVoucher}
@@ -97,7 +107,6 @@ export function OrderPanel({
         onUnbindVoucher={onUnbindVoucher}
         order={order}
       />
-
       {production ? (
         <div className="order-cancellation">
           <CancellationForm busy={busy} label="Cancelar comanda" onSubmit={onCancelOrder} />

@@ -1,4 +1,5 @@
 import type { DatabaseOrderVoucherAllocation } from './operation-vouchers';
+import type { DatabaseProductFallbackIcon } from './product-presentation';
 import type { DatabaseVoucherRedemption } from './vouchers';
 
 export type DatabaseServicePointType = 'table' | 'counter';
@@ -68,6 +69,8 @@ export interface DatabaseOperationCatalogItem {
   readonly salePriceCents: number;
   readonly availableQuantity: number;
   readonly active: boolean;
+  readonly imageDataUrl: string | null;
+  readonly fallbackIcon: DatabaseProductFallbackIcon;
 }
 
 export interface DatabaseOperationState {

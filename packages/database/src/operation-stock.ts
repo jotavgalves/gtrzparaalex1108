@@ -6,6 +6,7 @@ import type {
   DatabaseOrderItem,
   DatabaseOrderItemKind,
 } from './operation-types';
+import { getProductPresentation } from './product-presentation';
 import type { DatabaseContext } from './types';
 
 interface ProductCatalogRow {
@@ -52,14 +53,19 @@ export function listOperationCatalog(
        ORDER BY p.active DESC, p.name COLLATE NOCASE`,
     )
     .all(eventId) as ProductCatalogRow[];
-  const productItems = products.map((product) => ({
-    id: product.id,
-    kind: 'product' as const,
-    name: product.name,
-    salePriceCents: product.sale_price_cents,
-    availableQuantity: eventId === null ? 0 : product.available_quantity,
-    active: product.active === 1,
-  }));
+  const productItems = products.map((product) => {
+    const presentation = getProductPresentation(database, product.id);
+    return {
+      id: product.id,
+      kind: 'product' as const,
+      name: product.name,
+      salePriceCents: product.sale_price_cents,
+      availableQuantity: eventId === null ? 0 : product.available_quantity,
+      active: product.active === 1,
+      imageDataUrl: presentation.imageDataUrl,
+      fallbackIcon: presentation.fallbackIcon,
+    };
+  });
   const comboItems = listCombos(database).map((combo) => ({
     id: combo.id,
     kind: 'combo' as const,
@@ -67,6 +73,8 @@ export function listOperationCatalog(
     salePriceCents: combo.salePriceCents,
     availableQuantity: combo.availableUnits,
     active: combo.active,
+    imageDataUrl: null,
+    fallbackIcon: 'package' as const,
   }));
 
   return [...productItems, ...comboItems].sort((left, right) =>
@@ -229,9 +237,10 @@ export function restoreOrderStock(
     .all(eventId, saleNote) as SaleMovementRow[];
 
   if (movements.length === 0) {
-    throw new Error('A venda não possui movimentos de estoque que possam ser devolvidos.');
+    return 0;
   }
 
+  const productExists = database.sqlite.prepare('SELECT id FROM products WHERE id = ?');
   const updateStock = database.sqlite.prepare(
     `INSERT INTO event_stock (event_id, product_id, quantity, updated_at)
      VALUES (?, ?, ?, ?)
@@ -244,8 +253,12 @@ export function restoreOrderStock(
      (id, event_id, product_id, type, quantity, delta, note, created_at)
      VALUES (?, ?, ?, 'return', ?, ?, ?, ?)`,
   );
+  let restoredUnits = 0;
 
   for (const movement of movements) {
+    if (productExists.get(movement.product_id) === undefined) {
+      continue;
+    }
     updateStock.run(eventId, movement.product_id, movement.quantity, now);
     insertMovement.run(
       randomUUID(),
@@ -256,7 +269,8 @@ export function restoreOrderStock(
       `Estorno da comanda ${orderId}`,
       now,
     );
+    restoredUnits += movement.quantity;
   }
 
-  return movements.reduce((total, movement) => total + movement.quantity, 0);
+  return restoredUnits;
 }

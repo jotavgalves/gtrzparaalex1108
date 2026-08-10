@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { productFallbackIconSchema, productImageDataUrlSchema } from './inventory';
+
 export const servicePointTypeSchema = z.enum(['table', 'counter']);
 export const servicePointStatusSchema = z.enum(['available', 'open']);
 export const orderStatusSchema = z.enum(['open', 'paid', 'cancelled']);
@@ -83,6 +85,8 @@ export const operationCatalogItemSchema = z.object({
   salePriceCents: z.number().int().nonnegative(),
   availableQuantity: z.number().int().nonnegative(),
   active: z.boolean(),
+  imageDataUrl: productImageDataUrlSchema,
+  fallbackIcon: productFallbackIconSchema,
 });
 
 export const operationStateSchema = z.object({

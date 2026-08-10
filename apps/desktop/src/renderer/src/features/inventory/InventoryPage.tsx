@@ -12,10 +12,7 @@ import { StockTransferSection } from './StockTransferSection';
 import { useInventory } from './useInventory';
 
 function formatMoney(cents: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(cents / 100);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
 export function InventoryPage(): React.JSX.Element {
@@ -31,6 +28,8 @@ export function InventoryPage(): React.JSX.Element {
     createProduct,
     updateProduct,
     recordMovement,
+    previewDeletion,
+    deleteProduct,
   } = useInventory();
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState<ProductKind | 'all'>('all');
@@ -43,22 +42,27 @@ export function InventoryPage(): React.JSX.Element {
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase('pt-BR');
-
     return products.filter((product) => {
       const matchesSearch =
         normalizedSearch.length === 0 ||
         product.name.toLocaleLowerCase('pt-BR').includes(normalizedSearch) ||
         product.categoryName.toLocaleLowerCase('pt-BR').includes(normalizedSearch);
-      const matchesKind = kind === 'all' || product.kind === kind;
-      const matchesCategory = categoryId === 'all' || product.categoryId === categoryId;
-      return matchesSearch && matchesKind && matchesCategory;
+      return (
+        matchesSearch &&
+        (kind === 'all' || product.kind === kind) &&
+        (categoryId === 'all' || product.categoryId === categoryId)
+      );
     });
   }, [categoryId, kind, products, search]);
 
   const activeProducts = products.filter((product) => product.active).length;
   const lowStockProducts = products.filter((product) => product.lowStock && product.active).length;
-  const stockCostCents = products.reduce(
-    (total, product) => total + product.quantity * (product.financials?.costCents ?? 0),
+  const currentStockValueCents = products.reduce(
+    (total, product) => total + (product.financials?.currentStockValueCents ?? 0),
+    0,
+  );
+  const contributedCostCents = products.reduce(
+    (total, product) => total + (product.financials?.contributedCostCents ?? 0),
     0,
   );
 
@@ -75,9 +79,7 @@ export function InventoryPage(): React.JSX.Element {
         <button
           className="button button--secondary"
           disabled={loading}
-          onClick={() => {
-            void reload();
-          }}
+          onClick={() => void reload()}
           type="button"
         >
           <RefreshCw size={17} aria-hidden="true" />
@@ -101,10 +103,13 @@ export function InventoryPage(): React.JSX.Element {
           <strong>{products.reduce((total, product) => total + product.quantity, 0)}</strong>
         </article>
         <article className="summary-card summary-card--accent">
-          <span>{production ? 'Custo do estoque' : 'Evento selecionado'}</span>
+          <span>{production ? 'Valor atual do estoque' : 'Evento selecionado'}</span>
           <strong>
-            {production ? formatMoney(stockCostCents) : hasActiveEvent ? 'Ativo' : 'Nenhum'}
+            {production ? formatMoney(currentStockValueCents) : hasActiveEvent ? 'Ativo' : 'Nenhum'}
           </strong>
+          {production ? (
+            <small>Aporte líquido calculado: {formatMoney(contributedCostCents)}</small>
+          ) : null}
         </article>
       </div>
 
@@ -114,7 +119,6 @@ export function InventoryPage(): React.JSX.Element {
           <span>Selecione um evento aberto para registrar entradas, perdas ou correções.</span>
         </div>
       ) : null}
-
       {error === null ? null : <p className="form-error">{error}</p>}
       {message === null ? null : <p className="form-success">{message}</p>}
 
@@ -125,7 +129,7 @@ export function InventoryPage(): React.JSX.Element {
               <PackagePlus size={20} aria-hidden="true" />
               <div>
                 <h2>Novo produto</h2>
-                <p>Custos e margens ficam disponíveis somente para Produção.</p>
+                <p>Foto, ícone, custos e margens ficam centralizados no cadastro.</p>
               </div>
             </div>
             {categories.length === 0 ? (
@@ -134,7 +138,6 @@ export function InventoryPage(): React.JSX.Element {
               <ProductForm busy={busy} categories={categories} onSubmit={createProduct} />
             )}
           </article>
-
           <article className="panel form-panel">
             <div className="panel__heading">
               <Boxes size={20} aria-hidden="true" />
@@ -164,7 +167,6 @@ export function InventoryPage(): React.JSX.Element {
             value={search}
           />
         </label>
-
         <select
           aria-label="Filtrar por tipo"
           onChange={(event) => {
@@ -176,7 +178,6 @@ export function InventoryPage(): React.JSX.Element {
           <option value="drink">Bebidas</option>
           <option value="food">Comidas</option>
         </select>
-
         <select
           aria-label="Filtrar por categoria"
           onChange={(event) => {
@@ -208,7 +209,9 @@ export function InventoryPage(): React.JSX.Element {
             categories={categories}
             hasActiveEvent={hasActiveEvent}
             key={product.id}
+            onDelete={deleteProduct}
             onMovement={recordMovement}
+            onPreviewDeletion={previewDeletion}
             onUpdate={updateProduct}
             product={product}
             production={production}
@@ -223,7 +226,6 @@ export function InventoryPage(): React.JSX.Element {
           products={products}
         />
       ) : null}
-
       <ComboSection products={products} production={production} />
     </section>
   );

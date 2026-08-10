@@ -36,10 +36,10 @@ test('SMK-VCH-001 — vincula voucher à mesa, usa saldo parcial e restitui no e
     await productForm.getByLabel('Aviso de estoque baixo', { exact: true }).fill('1');
     await productForm.getByRole('button', { name: 'Cadastrar produto' }).click();
     const productCard = window.locator('article.inventory-card').filter({ hasText: productName });
-    await productCard.getByRole('button', { name: 'Movimentar' }).click();
+    await productCard.getByRole('button', { name: 'Entrada', exact: true }).click();
     const movementForm = window.locator('form.movement-form');
     await movementForm.getByLabel('Quantidade', { exact: true }).fill('3');
-    await movementForm.getByRole('button', { name: 'Registrar movimento' }).click();
+    await movementForm.getByRole('button', { name: 'Registrar entrada' }).click();
     await expect(productCard.getByText('3 un.', { exact: true })).toBeVisible();
 
     await window.getByRole('link', { name: 'Mesas e balcão' }).click();

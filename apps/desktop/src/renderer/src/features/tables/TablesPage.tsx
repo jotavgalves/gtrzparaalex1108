@@ -9,10 +9,7 @@ import { ServicePointGrid } from './ServicePointGrid';
 import { useOperations } from './useOperations';
 
 function formatMoney(cents: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(cents / 100);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
 export function TablesPage(): React.JSX.Element {
@@ -54,16 +51,13 @@ export function TablesPage(): React.JSX.Element {
         <button
           className="button button--secondary"
           disabled={loading || busy}
-          onClick={() => {
-            void reload();
-          }}
+          onClick={() => void reload()}
           type="button"
         >
           <RefreshCw size={17} aria-hidden="true" />
           Atualizar
         </button>
       </header>
-
       <div className="summary-grid summary-grid--compact">
         <article className="summary-card">
           <span>Pontos de atendimento</span>
@@ -83,17 +77,14 @@ export function TablesPage(): React.JSX.Element {
           <small>Produtos e combos ativos com estoque</small>
         </article>
       </div>
-
       {error === null ? null : <p className="form-error">{error}</p>}
       {message === null ? null : <p className="form-success">{message}</p>}
-
       {state?.activeEventId === null || state === null ? (
         <div className="inventory-warning">
           <TriangleAlert size={19} aria-hidden="true" />
           <span>Selecione um evento aberto antes de operar mesas e vendas.</span>
         </div>
       ) : null}
-
       {state?.activeEventId !== null && state !== null && order === null ? (
         <>
           {production ? (
@@ -108,23 +99,21 @@ export function TablesPage(): React.JSX.Element {
               <CreateTableForm busy={busy} onSubmit={createTable} />
             </article>
           ) : null}
-
           {loading ? <div className="route-state">Carregando operação…</div> : null}
           {!loading ? (
             <ServicePointGrid busy={busy} onOpen={openServicePoint} servicePoints={servicePoints} />
           ) : null}
-
           {production && !loading ? (
             <RecentOrdersPanel busy={busy} onCancel={cancelOrder} orders={recentOrders} />
           ) : null}
         </>
       ) : null}
-
       {order === null ? null : (
         <div className="operation-workspace">
           <CatalogPanel busy={busy} items={catalog} onAdd={addItem} />
           <OrderPanel
             busy={busy}
+            catalog={catalog}
             onBack={clearOrder}
             onBindVoucher={bindVoucher}
             onCancelOrder={(reason) => cancelOrder(order.id, reason)}

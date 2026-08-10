@@ -12,6 +12,14 @@
       "types": "./src/payment-terminal.ts",
       "default": "./src/payment-terminal.ts"
     },
+    "./product-administration": {
+      "types": "./src/product-administration.ts",
+      "default": "./src/product-administration.ts"
+    },
+    "./product-presentation": {
+      "types": "./src/product-presentation.ts",
+      "default": "./src/product-presentation.ts"
+    },
     "./voucher-management": {
       "types": "./src/voucher-management.ts",
       "default": "./src/voucher-management.ts"

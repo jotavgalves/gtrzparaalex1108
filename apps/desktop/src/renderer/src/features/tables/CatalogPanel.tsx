@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 
 import type { OperationCatalogItem, OrderItemKind } from '@gtrz/contracts';
 
+import { ProductVisual } from '../../shared/product/ProductVisual';
+
 interface CatalogPanelProps {
   readonly items: readonly OperationCatalogItem[];
   readonly busy: boolean;
@@ -10,10 +12,7 @@ interface CatalogPanelProps {
 }
 
 function formatMoney(cents: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(cents / 100);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
 export function CatalogPanel({ items, busy, onAdd }: CatalogPanelProps): React.JSX.Element {
@@ -37,7 +36,6 @@ export function CatalogPanel({ items, busy, onAdd }: CatalogPanelProps): React.J
           <p>Os itens indisponíveis permanecem visíveis, mas não podem ser adicionados.</p>
         </div>
       </div>
-
       <div className="operation-catalog__filters">
         <label className="compact-field__input">
           <Search size={16} aria-hidden="true" />
@@ -62,7 +60,6 @@ export function CatalogPanel({ items, busy, onAdd }: CatalogPanelProps): React.J
           <option value="combo">Combos</option>
         </select>
       </div>
-
       <div className="operation-catalog__list">
         {filtered.map((item) => {
           const available = item.active && item.availableQuantity > 0;
@@ -71,11 +68,15 @@ export function CatalogPanel({ items, busy, onAdd }: CatalogPanelProps): React.J
               className="catalog-item"
               disabled={busy || !available}
               key={`${item.kind}-${item.id}`}
-              onClick={() => {
-                void onAdd(item);
-              }}
+              onClick={() => void onAdd(item)}
               type="button"
             >
+              <ProductVisual
+                alt={item.name}
+                fallbackIcon={item.fallbackIcon}
+                imageDataUrl={item.imageDataUrl}
+                size="small"
+              />
               <span>
                 <strong>{item.name}</strong>
                 <small>

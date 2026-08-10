@@ -1,13 +1,17 @@
-import { PackagePlus, Save, X } from 'lucide-react';
-import { useState, type SyntheticEvent } from 'react';
+import { ImagePlus, PackagePlus, Save, X } from 'lucide-react';
+import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 
 import type {
   CreateProductInput,
   InventoryProduct,
   ProductCategory,
+  ProductFallbackIcon,
   ProductKind,
   UpdateProductInput,
 } from '@gtrz/contracts';
+
+import { PRODUCT_ICON_OPTIONS } from '../../shared/product/product-icon-options';
+import { ProductVisual } from '../../shared/product/ProductVisual';
 
 interface ProductFormBaseProps {
   readonly categories: readonly ProductCategory[];
@@ -33,14 +37,24 @@ function centsToInput(cents: number | undefined): string {
 }
 
 function inputToCents(value: string): number {
-  const normalized = value.trim().replace(',', '.');
-  const amount = Number(normalized);
-
-  if (!Number.isFinite(amount) || amount < 0) {
+  const amount = Number(value.trim().replace(',', '.'));
+  if (!Number.isFinite(amount) || amount < 0)
     throw new Error('Informe valores monetários válidos.');
-  }
-
   return Math.round(amount * 100);
+}
+
+function readImage(event: ChangeEvent<HTMLInputElement>, onReady: (dataUrl: string) => void): void {
+  const file = event.target.files?.[0];
+  if (file === undefined) return;
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+    throw new Error('Escolha uma foto PNG, JPG ou WebP.');
+  }
+  if (file.size > 550_000) throw new Error('A foto deve ter no máximo 550 KB.');
+  const reader = new FileReader();
+  reader.addEventListener('load', () => {
+    if (typeof reader.result === 'string') onReady(reader.result);
+  });
+  reader.readAsDataURL(file);
 }
 
 export function ProductForm(props: ProductFormProps): React.JSX.Element {
@@ -55,12 +69,17 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
     String(props.product?.lowStockThreshold ?? 0),
   );
   const [active, setActive] = useState(props.product?.active ?? true);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(
+    props.product?.imageDataUrl ?? null,
+  );
+  const [fallbackIcon, setFallbackIcon] = useState<ProductFallbackIcon>(
+    props.product?.fallbackIcon ?? 'package',
+  );
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: SyntheticEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
-
     try {
       const baseInput: CreateProductInput = {
         categoryId,
@@ -69,24 +88,22 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
         costCents: inputToCents(cost),
         salePriceCents: inputToCents(salePrice),
         lowStockThreshold: Number(lowStockThreshold),
+        imageDataUrl,
+        fallbackIcon,
       };
-
       if (!Number.isInteger(baseInput.lowStockThreshold) || baseInput.lowStockThreshold < 0) {
         throw new Error('O limite de estoque deve ser um número inteiro não negativo.');
       }
-
       if (props.product === undefined) {
         await props.onSubmit(baseInput);
         setName('');
         setCost('');
         setSalePrice('');
         setLowStockThreshold('0');
+        setImageDataUrl(null);
+        setFallbackIcon('package');
       } else {
-        await props.onSubmit({
-          ...baseInput,
-          productId: props.product.id,
-          active,
-        });
+        await props.onSubmit({ ...baseInput, productId: props.product.id, active });
       }
     } catch (submitError: unknown) {
       setError(submitError instanceof Error ? submitError.message : 'Não foi possível salvar.');
@@ -109,10 +126,10 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
             value={name}
           />
         </label>
-
         <label className="form-field">
           <span>Categoria</span>
           <select
+            aria-label="Categoria"
             onChange={(event) => {
               setCategoryId(event.target.value);
             }}
@@ -129,7 +146,6 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
               ))}
           </select>
         </label>
-
         <label className="form-field">
           <span>Tipo</span>
           <select
@@ -142,7 +158,22 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
             <option value="food">Comida</option>
           </select>
         </label>
-
+        <label className="form-field">
+          <span>Ícone sem foto</span>
+          <select
+            aria-label="Ícone do produto"
+            onChange={(event) => {
+              setFallbackIcon(event.target.value as ProductFallbackIcon);
+            }}
+            value={fallbackIcon}
+          >
+            {PRODUCT_ICON_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="form-field">
           <span>Preço de custo</span>
           <input
@@ -158,7 +189,6 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
             value={cost}
           />
         </label>
-
         <label className="form-field">
           <span>Preço de venda</span>
           <input
@@ -174,7 +204,6 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
             value={salePrice}
           />
         </label>
-
         <label className="form-field">
           <span>Aviso de estoque baixo</span>
           <input
@@ -190,6 +219,48 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
         </label>
       </div>
 
+      <div className="product-media-editor">
+        <ProductVisual
+          alt={name || 'Produto'}
+          fallbackIcon={fallbackIcon}
+          imageDataUrl={imageDataUrl}
+        />
+        <div>
+          <strong>Foto do produto</strong>
+          <small>PNG, JPG ou WebP, até 550 KB. Sem foto, aparece o ícone escolhido.</small>
+          <div className="product-media-editor__actions">
+            <label className="button button--secondary button--compact">
+              <ImagePlus size={15} aria-hidden="true" /> Escolher foto
+              <input
+                accept="image/png,image/jpeg,image/webp"
+                className="visually-hidden"
+                onChange={(event) => {
+                  try {
+                    readImage(event, setImageDataUrl);
+                    setError(null);
+                  } catch (imageError: unknown) {
+                    setError(imageError instanceof Error ? imageError.message : 'Foto inválida.');
+                  }
+                }}
+                type="file"
+              />
+            </label>
+            {imageDataUrl === null ? null : (
+              <button
+                className="button button--ghost button--compact"
+                onClick={() => {
+                  setImageDataUrl(null);
+                }}
+                type="button"
+              >
+                <X size={15} aria-hidden="true" />
+                Remover foto
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {props.product === undefined ? null : (
         <label className="checkbox-field">
           <input
@@ -202,9 +273,7 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
           Produto ativo para novas vendas
         </label>
       )}
-
       {error === null ? null : <p className="form-error">{error}</p>}
-
       <div className="product-form__actions">
         {props.onCancel === undefined ? null : (
           <button

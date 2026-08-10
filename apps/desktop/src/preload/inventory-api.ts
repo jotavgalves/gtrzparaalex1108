@@ -3,10 +3,13 @@ import { ipcRenderer } from 'electron';
 import {
   createCategoryInputSchema,
   createProductInputSchema,
+  deleteProductInputSchema,
   inventoryProductSchema,
   inventoryStateSchema,
   IPC_CHANNELS,
   productCategorySchema,
+  productDeletionImpactSchema,
+  productDeletionResultSchema,
   recordStockMovementInputSchema,
   stockTransferListSchema,
   stockTransferSchema,
@@ -14,10 +17,13 @@ import {
   updateProductInputSchema,
   type CreateCategoryInput,
   type CreateProductInput,
+  type DeleteProductInput,
   type InventoryApi,
   type InventoryProduct,
   type InventoryState,
   type ProductCategory,
+  type ProductDeletionImpact,
+  type ProductDeletionResult,
   type RecordStockMovementInput,
   type StockTransfer,
   type TransferStockInput,
@@ -72,5 +78,20 @@ export const inventoryApi: InventoryApi = {
       parsedInput,
     );
     return stockTransferSchema.parse(payload);
+  },
+  async previewDeletion(productId: string): Promise<ProductDeletionImpact> {
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.inventoryPreviewProductDeletion,
+      productId,
+    );
+    return productDeletionImpactSchema.parse(payload);
+  },
+  async deleteProduct(input: DeleteProductInput): Promise<ProductDeletionResult> {
+    const parsedInput = deleteProductInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.inventoryDeleteProduct,
+      parsedInput,
+    );
+    return productDeletionResultSchema.parse(payload);
   },
 };
