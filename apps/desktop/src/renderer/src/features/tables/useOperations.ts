@@ -11,6 +11,7 @@ import type {
 interface OperationsViewState {
   readonly state: OperationState | null;
   readonly order: Order | null;
+  readonly selectedServicePoint: ServicePoint | null;
   readonly loading: boolean;
   readonly busy: boolean;
   readonly error: string | null;
@@ -34,6 +35,7 @@ function getErrorMessage(error: unknown): string {
 export function useOperations(): OperationsViewState {
   const [state, setState] = useState<OperationState | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
+  const [selectedServicePoint, setSelectedServicePoint] = useState<ServicePoint | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,12 @@ export function useOperations(): OperationsViewState {
     setError(null);
 
     try {
-      setState(await window.gtrz.operations.getState());
+      const nextState = await window.gtrz.operations.getState();
+      setState(nextState);
+      setSelectedServicePoint((current) => {
+        if (current === null) return null;
+        return nextState.servicePoints.find((item) => item.id === current.id) ?? null;
+      });
     } catch (loadError: unknown) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -94,11 +101,16 @@ export function useOperations(): OperationsViewState {
 
   const openServicePoint = useCallback(
     async (servicePoint: ServicePoint): Promise<void> => {
-      const selected = await run(() =>
-        servicePoint.activeOrderId === null
-          ? window.gtrz.operations.openOrder({ servicePointId: servicePoint.id })
-          : window.gtrz.operations.getOrder(servicePoint.activeOrderId),
-      );
+      setSelectedServicePoint(servicePoint);
+      setError(null);
+      setMessage(null);
+
+      if (servicePoint.activeOrderId === null) {
+        setOrder(null);
+        return;
+      }
+
+      const selected = await run(() => window.gtrz.operations.getOrder(servicePoint.activeOrderId));
       setOrder(selected);
     },
     [run],
@@ -106,28 +118,33 @@ export function useOperations(): OperationsViewState {
 
   const addItem = useCallback(
     async (item: OperationCatalogItem): Promise<void> => {
-      if (order === null) {
-        throw new Error('Abra uma mesa ou o balcão antes de adicionar itens.');
+      if (selectedServicePoint === null) {
+        throw new Error('Selecione uma mesa ou o balcão antes de adicionar itens.');
       }
 
       const updated = await run(() =>
-        window.gtrz.operations.addItem({
-          orderId: order.id,
-          itemKind: item.kind,
-          itemId: item.id,
-          quantity: 1,
-        }),
+        order === null
+          ? window.gtrz.operations.startOrderWithItem({
+              servicePointId: selectedServicePoint.id,
+              itemKind: item.kind,
+              itemId: item.id,
+              quantity: 1,
+            })
+          : window.gtrz.operations.addItem({
+              orderId: order.id,
+              itemKind: item.kind,
+              itemId: item.id,
+              quantity: 1,
+            }),
       );
       setOrder(updated);
     },
-    [order, run],
+    [order, run, selectedServicePoint],
   );
 
   const removeItem = useCallback(
     async (orderItemId: string): Promise<void> => {
-      if (order === null) {
-        return;
-      }
+      if (order === null) return;
 
       const updated = await run(() =>
         window.gtrz.operations.removeItem({ orderId: order.id, orderItemId }),
@@ -140,7 +157,7 @@ export function useOperations(): OperationsViewState {
   const bindVoucher = useCallback(
     async (code: string): Promise<void> => {
       if (order === null) {
-        throw new Error('Abra uma mesa ou o balcão antes de vincular um voucher.');
+        throw new Error('Adicione ao menos um item antes de vincular um voucher.');
       }
 
       const updated = await run(
@@ -153,9 +170,7 @@ export function useOperations(): OperationsViewState {
   );
 
   const unbindVoucher = useCallback(async (): Promise<void> => {
-    if (!order?.voucherAllocation) {
-      return;
-    }
+    if (!order?.voucherAllocation) return;
 
     const updated = await run(
       () => window.gtrz.operations.unbindVoucher({ orderId: order.id }),
@@ -175,6 +190,7 @@ export function useOperations(): OperationsViewState {
         'Venda concluída e estoque atualizado.',
       );
       setOrder(null);
+      setSelectedServicePoint(null);
     },
     [order, run],
   );
@@ -188,6 +204,7 @@ export function useOperations(): OperationsViewState {
 
       if (order?.id === orderId) {
         setOrder(null);
+        setSelectedServicePoint(null);
       }
     },
     [order?.id, run],
@@ -195,12 +212,14 @@ export function useOperations(): OperationsViewState {
 
   const clearOrder = useCallback((): void => {
     setOrder(null);
+    setSelectedServicePoint(null);
     setError(null);
   }, []);
 
   return {
     state,
     order,
+    selectedServicePoint,
     loading,
     busy,
     error,
