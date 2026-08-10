@@ -13,6 +13,7 @@ import {
   orderSchema,
   removeOrderItemInputSchema,
   servicePointSchema,
+  startOrderWithItemInputSchema,
   unbindOrderVoucherInputSchema,
   type AddOrderItemInput,
   type BindOrderVoucherInput,
@@ -25,6 +26,7 @@ import {
   type Order,
   type RemoveOrderItemInput,
   type ServicePoint,
+  type StartOrderWithItemInput,
   type UnbindOrderVoucherInput,
 } from '@gtrz/contracts';
 
@@ -55,6 +57,15 @@ export const operationsApi: OperationsApi = {
   async getOrder(orderId: string): Promise<Order> {
     const parsedInput = getOrderInputSchema.parse({ orderId });
     const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.operationsGetOrder, parsedInput);
+    return orderSchema.parse(payload);
+  },
+
+  async startOrderWithItem(input: StartOrderWithItemInput): Promise<Order> {
+    const parsedInput = startOrderWithItemInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.operationsStartOrderWithItem,
+      parsedInput,
+    );
     return orderSchema.parse(payload);
   },
 
