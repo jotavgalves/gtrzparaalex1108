@@ -31,6 +31,7 @@ export function TablesPage(): React.JSX.Element {
     unbindVoucher,
     closeCurrentOrder,
     cancelOrder,
+    reprintOrder,
     clearOrder,
   } = useOperations();
   const production = sessionState?.profile === 'production';
@@ -113,6 +114,7 @@ export function TablesPage(): React.JSX.Element {
               busy={busy}
               canCancel={production}
               onCancel={cancelOrder}
+              onReprint={reprintOrder}
               orders={recentOrders}
               title="Histórico de vendas do evento"
             />
@@ -131,6 +133,7 @@ export function TablesPage(): React.JSX.Element {
             onCancelOrder={cancelOrder}
             onCloseOrder={closeCurrentOrder}
             onRemoveItem={removeItem}
+            onReprintOrder={reprintOrder}
             onUnbindVoucher={unbindVoucher}
             order={order}
             production={production}

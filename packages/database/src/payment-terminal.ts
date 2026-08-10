@@ -12,6 +12,12 @@ export interface UpdatePaymentTerminalSettingsInput {
   readonly creditRateBasisPoints: number;
 }
 
+export interface PaymentTerminalFees {
+  readonly debitFeeCents: number;
+  readonly creditFeeCents: number;
+  readonly totalFeeCents: number;
+}
+
 function metaKey(eventId: string, kind: 'debit' | 'credit'): string {
   return `payment_terminal.${kind}_rate_basis_points:${eventId}`;
 }
@@ -43,6 +49,25 @@ function validateRate(value: number): void {
   if (!Number.isInteger(value) || value < 0 || value > 10_000) {
     throw new Error('A taxa da maquininha deve estar entre 0% e 100%.');
   }
+}
+
+function calculateFee(amountCents: number, rateBasisPoints: number): number {
+  return Math.round((amountCents * rateBasisPoints) / 10_000);
+}
+
+export function calculatePaymentTerminalFees(
+  database: DatabaseContext,
+  eventId: string,
+  input: { readonly debitCardCents: number; readonly creditCardCents: number },
+): PaymentTerminalFees {
+  const debitFeeCents = calculateFee(input.debitCardCents, readRate(database, eventId, 'debit'));
+  const creditFeeCents = calculateFee(input.creditCardCents, readRate(database, eventId, 'credit'));
+
+  return {
+    debitFeeCents,
+    creditFeeCents,
+    totalFeeCents: debitFeeCents + creditFeeCents,
+  };
 }
 
 export function getPaymentTerminalSettings(database: DatabaseContext): PaymentTerminalSettings {

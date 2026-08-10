@@ -44,8 +44,10 @@ import { registerFinanceIpcHandlers } from './register-finance-ipc';
 import { registerInsightsIpcHandlers } from './register-insights-ipc';
 import { registerInventoryIpcHandlers } from './register-inventory-ipc';
 import { registerOperationsIpcHandlers } from './register-operations-ipc';
+import { registerPrintingIpcHandlers } from './register-printing-ipc';
 import { registerTicketIpcHandlers } from './register-ticket-ipc';
 import { registerVoucherIpcHandlers } from './register-voucher-ipc';
+import { ThermalPrintService } from './thermal-print-service';
 
 interface RegisterIpcOptions {
   readonly getDatabase: () => DatabaseContext;
@@ -76,6 +78,8 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
   for (const channel of CONTROL_CHANNELS) {
     ipcMain.removeHandler(channel);
   }
+
+  const printService = new ThermalPrintService({ getDatabase: options.getDatabase });
 
   ipcMain.handle(IPC_CHANNELS.systemGetInfo, (): SystemInfo => {
     return systemInfoSchema.parse({
@@ -176,7 +180,11 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     backupService: options.backupService,
   });
   registerFinanceIpcHandlers({ getDatabase: options.getDatabase });
-  registerOperationsIpcHandlers({ getDatabase: options.getDatabase });
+  registerPrintingIpcHandlers({ printService });
+  registerOperationsIpcHandlers({
+    getDatabase: options.getDatabase,
+    printAfterSale: (orderId) => printService.printAfterSale(orderId),
+  });
   registerTicketIpcHandlers({ getDatabase: options.getDatabase });
   registerVoucherIpcHandlers({ getDatabase: options.getDatabase });
 }

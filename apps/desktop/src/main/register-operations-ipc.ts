@@ -34,6 +34,7 @@ import {
 
 interface RegisterOperationsIpcOptions {
   readonly getDatabase: () => DatabaseContext;
+  readonly printAfterSale: (orderId: string) => Promise<void>;
 }
 
 const OPERATION_CHANNELS = [
@@ -119,7 +120,7 @@ export function registerOperationsIpcHandlers(options: RegisterOperationsIpcOpti
 
   ipcMain.handle(IPC_CHANNELS.operationsCloseOrder, (_event, payload: unknown) => {
     const input = closeOrderInputSchema.parse(payload);
-    return orderSchema.parse(
+    const order = orderSchema.parse(
       closeOrder(options.getDatabase(), {
         orderId: input.orderId,
         discountCents: input.discountCents,
@@ -127,6 +128,8 @@ export function registerOperationsIpcHandlers(options: RegisterOperationsIpcOpti
         voucherUses: input.voucherUses,
       }),
     );
+    void options.printAfterSale(order.id);
+    return order;
   });
 
   ipcMain.handle(IPC_CHANNELS.operationsCancelOrder, (_event, payload: unknown) => {

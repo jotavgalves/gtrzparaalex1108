@@ -44,6 +44,7 @@ import { cashApi, expenseApi } from './finance-api';
 import { auditApi, dashboardApi } from './insights-api';
 import { inventoryApi } from './inventory-api';
 import { operationsApi } from './operations-api';
+import { printingApi } from './printing-api';
 import { ticketApi } from './ticket-api';
 import { voucherApi } from './voucher-api';
 
@@ -124,6 +125,7 @@ const api: GtrzDesktopApi = {
       return paymentTerminalSettingsSchema.parse(payload);
     },
   },
+  printing: printingApi,
   backups: {
     async getState(): Promise<BackupState> {
       const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsGetState);

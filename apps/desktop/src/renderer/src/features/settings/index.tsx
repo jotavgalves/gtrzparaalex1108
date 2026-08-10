@@ -1,6 +1,8 @@
 import { CreditCard, KeyRound, Settings, ShieldCheck } from 'lucide-react';
 import { useEffect, useState, type SyntheticEvent } from 'react';
 
+import { PrintingSettingsPanel } from './PrintingSettingsPanel';
+
 function basisPointsToInput(value: number): string {
   return (value / 100).toFixed(2);
 }
@@ -260,6 +262,8 @@ export function SettingsPage(): React.JSX.Element {
             Salvar taxas da maquininha
           </button>
         </form>
+
+        <PrintingSettingsPanel />
       </div>
     </section>
   );

@@ -8,9 +8,17 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./dashboard-terminal": {
+      "types": "./src/dashboard-terminal.ts",
+      "default": "./src/dashboard-terminal.ts"
+    },
     "./payment-terminal": {
       "types": "./src/payment-terminal.ts",
       "default": "./src/payment-terminal.ts"
+    },
+    "./printing": {
+      "types": "./src/printing.ts",
+      "default": "./src/printing.ts"
     },
     "./product-administration": {
       "types": "./src/product-administration.ts",

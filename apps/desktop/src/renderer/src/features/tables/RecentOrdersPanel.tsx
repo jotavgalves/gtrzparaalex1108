@@ -1,4 +1,4 @@
-import { ChevronDown, History, RotateCcw } from 'lucide-react';
+import { ChevronDown, History, Printer, RotateCcw } from 'lucide-react';
 
 import type { Order } from '@gtrz/contracts';
 
@@ -10,6 +10,7 @@ interface RecentOrdersPanelProps {
   readonly canCancel: boolean;
   readonly title: string;
   readonly onCancel: (orderId: string, reason: string) => Promise<void>;
+  readonly onReprint: (orderId: string) => Promise<void>;
 }
 
 function formatMoney(cents: number): string {
@@ -34,6 +35,7 @@ export function RecentOrdersPanel({
   canCancel,
   title,
   onCancel,
+  onReprint,
 }: RecentOrdersPanelProps): React.JSX.Element {
   return (
     <details className="history-drawer">
@@ -81,6 +83,20 @@ export function RecentOrdersPanel({
                     .map((item) => `${String(item.quantity)}× ${item.itemName}`)
                     .join(' · ')}
                 </p>
+
+                {order.status === 'paid' ? (
+                  <div className="recent-order-card__tools">
+                    <button
+                      className="button button--secondary button--compact"
+                      disabled={busy}
+                      onClick={() => void onReprint(order.id)}
+                      type="button"
+                    >
+                      <Printer size={15} aria-hidden="true" />
+                      Reimprimir nota
+                    </button>
+                  </div>
+                ) : null}
 
                 {canCancel && order.status === 'paid' ? (
                   <div className="recent-order-card__cancel">

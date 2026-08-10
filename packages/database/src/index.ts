@@ -2,8 +2,9 @@ import BetterSqlite3 from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 
 import { financeMigration } from './finance-migration';
-import { ticketMigration } from './ticket-migration';
 import { technicalSchema } from './schema';
+import { stockSaleMigration } from './stock-sale-migration';
+import { ticketMigration } from './ticket-migration';
 import type { DatabaseContext } from './types';
 import { voucherOrderMigration } from './voucher-order-migration';
 
@@ -160,50 +161,23 @@ const migrations: readonly Migration[] = [
         destination_quantity_before INTEGER NOT NULL CHECK (destination_quantity_before >= 0),
         destination_quantity_after INTEGER NOT NULL CHECK (destination_quantity_after >= 0),
         created_at INTEGER NOT NULL,
-        CHECK (source_event_id != destination_event_id),
         FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE RESTRICT,
         FOREIGN KEY (source_event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT,
         FOREIGN KEY (destination_event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT
       );
 
-      CREATE INDEX stock_transfers_source_created_idx ON stock_transfers (source_event_id, created_at DESC);
-      CREATE INDEX stock_transfers_destination_created_idx ON stock_transfers (destination_event_id, created_at DESC);
-      CREATE INDEX stock_transfers_product_created_idx ON stock_transfers (product_id, created_at DESC);
+      CREATE INDEX stock_transfers_product_created_idx
+        ON stock_transfers (product_id, created_at DESC);
+      CREATE INDEX stock_transfers_source_created_idx
+        ON stock_transfers (source_event_id, created_at DESC);
+      CREATE INDEX stock_transfers_destination_created_idx
+        ON stock_transfers (destination_event_id, created_at DESC);
     `,
   },
   {
     version: 6,
-    name: 'service-points-orders-and-payments',
+    name: 'operations-orders-and-payments',
     sql: `
-      DROP INDEX IF EXISTS stock_movements_event_created_idx;
-      DROP INDEX IF EXISTS stock_movements_product_created_idx;
-      ALTER TABLE stock_movements RENAME TO stock_movements_before_sales;
-
-      CREATE TABLE stock_movements (
-        id TEXT PRIMARY KEY NOT NULL,
-        event_id TEXT NOT NULL,
-        product_id TEXT NOT NULL,
-        type TEXT NOT NULL CHECK (type IN (
-          'purchase', 'correction-positive', 'correction-negative', 'loss', 'breakage',
-          'internal-consumption', 'courtesy', 'return', 'sale'
-        )),
-        quantity INTEGER NOT NULL CHECK (quantity > 0),
-        delta INTEGER NOT NULL CHECK (delta != 0),
-        note TEXT,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE CASCADE ON DELETE RESTRICT
-      );
-
-      INSERT INTO stock_movements
-        (id, event_id, product_id, type, quantity, delta, note, created_at)
-      SELECT id, event_id, product_id, type, quantity, delta, note, created_at
-      FROM stock_movements_before_sales;
-      DROP TABLE stock_movements_before_sales;
-
-      CREATE INDEX stock_movements_event_created_idx ON stock_movements (event_id, created_at DESC);
-      CREATE INDEX stock_movements_product_created_idx ON stock_movements (product_id, created_at DESC);
-
       CREATE TABLE service_points (
         id TEXT PRIMARY KEY NOT NULL,
         event_id TEXT NOT NULL,
@@ -215,10 +189,9 @@ const migrations: readonly Migration[] = [
         FOREIGN KEY (event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT
       );
 
-      CREATE UNIQUE INDEX service_points_event_label_unique
-        ON service_points (event_id, label COLLATE NOCASE) WHERE active = 1;
-      CREATE UNIQUE INDEX service_points_one_counter_unique
-        ON service_points (event_id) WHERE type = 'counter' AND active = 1;
+      CREATE UNIQUE INDEX service_points_event_label_active_idx
+        ON service_points (event_id, label COLLATE NOCASE)
+        WHERE active = 1;
 
       CREATE TABLE orders (
         id TEXT PRIMARY KEY NOT NULL,
@@ -233,12 +206,15 @@ const migrations: readonly Migration[] = [
         closed_at INTEGER,
         updated_at INTEGER NOT NULL,
         FOREIGN KEY (event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-        FOREIGN KEY (service_point_id) REFERENCES service_points(id) ON UPDATE CASCADE ON DELETE RESTRICT
+        FOREIGN KEY (service_point_id) REFERENCES service_points(id)
+          ON UPDATE CASCADE ON DELETE RESTRICT
       );
 
-      CREATE UNIQUE INDEX orders_open_service_point_unique
-        ON orders (service_point_id) WHERE status = 'open';
-      CREATE INDEX orders_event_status_updated_idx ON orders (event_id, status, updated_at DESC);
+      CREATE UNIQUE INDEX orders_single_open_service_point_idx
+        ON orders (service_point_id)
+        WHERE status = 'open';
+      CREATE INDEX orders_event_status_updated_idx
+        ON orders (event_id, status, updated_at DESC);
 
       CREATE TABLE order_items (
         id TEXT PRIMARY KEY NOT NULL,
@@ -250,8 +226,7 @@ const migrations: readonly Migration[] = [
         unit_price_cents INTEGER NOT NULL CHECK (unit_price_cents >= 0),
         total_cents INTEGER NOT NULL CHECK (total_cents >= 0),
         created_at INTEGER NOT NULL,
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE,
-        UNIQUE (order_id, item_kind, item_id)
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE
       );
 
       CREATE INDEX order_items_order_created_idx ON order_items (order_id, created_at);
@@ -272,26 +247,22 @@ const migrations: readonly Migration[] = [
   },
   {
     version: 7,
-    name: 'vouchers-and-balance-ledger',
+    name: 'vouchers',
     sql: `
       CREATE TABLE vouchers (
         id TEXT PRIMARY KEY NOT NULL,
         event_id TEXT NOT NULL,
         code TEXT NOT NULL COLLATE NOCASE,
         label TEXT NOT NULL,
-        initial_balance_cents INTEGER NOT NULL CHECK (initial_balance_cents > 0),
+        initial_balance_cents INTEGER NOT NULL CHECK (initial_balance_cents >= 0),
         remaining_balance_cents INTEGER NOT NULL CHECK (remaining_balance_cents >= 0),
         status TEXT NOT NULL CHECK (status IN ('active', 'exhausted', 'cancelled')),
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
-        CHECK (remaining_balance_cents <= initial_balance_cents),
         FOREIGN KEY (event_id) REFERENCES events(id) ON UPDATE CASCADE ON DELETE RESTRICT
       );
 
-      CREATE UNIQUE INDEX vouchers_event_code_unique
-        ON vouchers (event_id, code COLLATE NOCASE);
-      CREATE INDEX vouchers_event_status_updated_idx
-        ON vouchers (event_id, status, updated_at DESC);
+      CREATE UNIQUE INDEX vouchers_event_code_idx ON vouchers (event_id, code COLLATE NOCASE);
 
       CREATE TABLE voucher_transactions (
         id TEXT PRIMARY KEY NOT NULL,
@@ -323,6 +294,7 @@ const migrations: readonly Migration[] = [
   financeMigration,
   ticketMigration,
   voucherOrderMigration,
+  stockSaleMigration,
 ];
 
 function ensureMigrationTable(sqlite: BetterSqlite3.Database): void {
@@ -387,7 +359,7 @@ export function verifyDatabaseIntegrity(database: DatabaseContext): boolean {
 
 export * from './audit';
 export * from './backup';
-export * from './cash';
+export * from './cash-terminal';
 export * from './combos';
 export * from './control';
 export * from './event-close';

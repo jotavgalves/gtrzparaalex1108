@@ -44,6 +44,7 @@ export const cashStateSchema = z.object({
   grossSalesCents: z.number().int().nonnegative(),
   activeExpensesCents: z.number().int().nonnegative(),
   cashExpensesCents: z.number().int().nonnegative(),
+  terminalFeesCents: z.number().int().nonnegative(),
   expectedCashCents: z.number().int(),
   projectedResultCents: z.number().int(),
 });

@@ -20,6 +20,7 @@ interface OrderPanelProps {
   readonly onUnbindVoucher: () => Promise<void>;
   readonly onCloseOrder: (input: Omit<CloseOrderInput, 'orderId'>) => Promise<void>;
   readonly onCancelOrder: (orderId: string, reason: string) => Promise<void>;
+  readonly onReprintOrder: (orderId: string) => Promise<void>;
 }
 
 function formatMoney(cents: number): string {
@@ -39,6 +40,7 @@ export function OrderPanel({
   onUnbindVoucher,
   onCloseOrder,
   onCancelOrder,
+  onReprintOrder,
 }: OrderPanelProps): React.JSX.Element {
   return (
     <article className="panel order-panel">
@@ -135,6 +137,7 @@ export function OrderPanel({
         busy={busy}
         canCancel={production}
         onCancel={onCancelOrder}
+        onReprint={onReprintOrder}
         orders={history}
         title={`Histórico de ${servicePoint.label}`}
       />

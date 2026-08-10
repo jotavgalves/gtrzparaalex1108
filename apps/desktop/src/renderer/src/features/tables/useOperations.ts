@@ -25,6 +25,7 @@ interface OperationsViewState {
   readonly unbindVoucher: () => Promise<void>;
   readonly closeCurrentOrder: (input: Omit<CloseOrderInput, 'orderId'>) => Promise<void>;
   readonly cancelOrder: (orderId: string, reason: string) => Promise<void>;
+  readonly reprintOrder: (orderId: string) => Promise<void>;
   readonly clearOrder: () => void;
 }
 
@@ -211,6 +212,24 @@ export function useOperations(): OperationsViewState {
     [order?.id, run],
   );
 
+  const reprintOrder = useCallback(async (orderId: string): Promise<void> => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await window.gtrz.printing.reprintOrder({ orderId });
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      setMessage(result.message);
+    } catch (printError: unknown) {
+      setError(getErrorMessage(printError));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
   const clearOrder = useCallback((): void => {
     setOrder(null);
     setSelectedServicePoint(null);
@@ -234,6 +253,7 @@ export function useOperations(): OperationsViewState {
     unbindVoucher,
     closeCurrentOrder,
     cancelOrder,
+    reprintOrder,
     clearOrder,
   };
 }

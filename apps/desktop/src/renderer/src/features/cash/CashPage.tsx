@@ -38,7 +38,7 @@ export function CashPage(): React.JSX.Element {
         <div>
           <span className="eyebrow">Conciliação derivada das operações</span>
           <h1>Caixa administrativo</h1>
-          <p>Vendas, vouchers, despesas e movimentações são consolidados automaticamente.</p>
+          <p>Vendas, vouchers, despesas, taxas e movimentações são consolidados automaticamente.</p>
         </div>
         <button
           className="button button--secondary"
@@ -61,6 +61,10 @@ export function CashPage(): React.JSX.Element {
         <article className="summary-card">
           <span>Despesas ativas</span>
           <strong>{formatMoney(state?.activeExpensesCents ?? 0)}</strong>
+        </article>
+        <article className="summary-card">
+          <span>Taxas da maquininha</span>
+          <strong>{formatMoney(state?.terminalFeesCents ?? 0)}</strong>
         </article>
         <article className="summary-card summary-card--accent">
           <span>Caixa físico esperado</span>
@@ -130,7 +134,7 @@ export function CashPage(): React.JSX.Element {
                 <WalletCards size={20} aria-hidden="true" />
                 <div>
                   <h2>Conferência</h2>
-                  <p>Valores gravados no fechamento permanecem auditáveis.</p>
+                  <p>Taxas de cartão reduzem o resultado, mas não o dinheiro físico da gaveta.</p>
                 </div>
               </div>
               <dl>
@@ -141,6 +145,10 @@ export function CashPage(): React.JSX.Element {
                 <div>
                   <dt>Despesas em dinheiro</dt>
                   <dd>{formatMoney(state.cashExpensesCents)}</dd>
+                </div>
+                <div>
+                  <dt>Taxas da maquininha</dt>
+                  <dd>{formatMoney(state.terminalFeesCents)}</dd>
                 </div>
                 <div>
                   <dt>Contado</dt>
