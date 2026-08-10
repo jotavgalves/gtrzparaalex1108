@@ -1,0 +1,40 @@
+name: Formatar macroetapa 3A temporariamente
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.event.pull_request.number == 22
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.23.1'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Formatar arquivos apontados pelo gate
+        run: >-
+          npx prettier --write
+          apps/desktop/src/renderer/src/features/tables/CheckoutForm.tsx
+          apps/desktop/src/renderer/src/features/tables/OrderPanel.tsx
+          packages/database/src/operation-items.ts
+          tests/e2e/operations.spec.ts
+          tests/e2e/vouchers.spec.ts
+      - name: Commitar formatação
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/desktop/src/renderer/src/features/tables/CheckoutForm.tsx apps/desktop/src/renderer/src/features/tables/OrderPanel.tsx packages/database/src/operation-items.ts tests/e2e/operations.spec.ts tests/e2e/vouchers.spec.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'style: formata macroetapa 3A'
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
