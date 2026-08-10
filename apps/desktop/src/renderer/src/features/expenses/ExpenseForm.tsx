@@ -1,7 +1,7 @@
 import { ReceiptText } from 'lucide-react';
 import { useState } from 'react';
 
-import type { CreateExpenseInput, PaymentMethod } from '@gtrz/contracts';
+import type { CreateExpenseInput, ExpensePaymentStatus, PaymentMethod } from '@gtrz/contracts';
 
 interface ExpenseFormProps {
   readonly busy: boolean;
@@ -20,11 +20,18 @@ const PAYMENT_LABELS: Readonly<Record<PaymentMethod, string>> = {
   'debit-card': 'Débito',
 };
 
+const STATUS_LABELS: Readonly<Record<ExpensePaymentStatus, string>> = {
+  open: 'Em aberto',
+  partial: 'Parcial',
+  paid: 'Paga',
+};
+
 export function ExpenseForm({ busy, onSubmit }: ExpenseFormProps): React.JSX.Element {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
+  const [paymentStatus, setPaymentStatus] = useState<ExpensePaymentStatus>('open');
   const [note, setNote] = useState('');
 
   return (
@@ -33,24 +40,18 @@ export function ExpenseForm({ busy, onSubmit }: ExpenseFormProps): React.JSX.Ele
       onSubmit={(event) => {
         event.preventDefault();
         const normalizedNote = note.trim();
-        const input =
-          normalizedNote.length === 0
-            ? {
-                category: category.trim(),
-                description: description.trim(),
-                amountCents: parseMoney(amount),
-                paymentMethod,
-              }
-            : {
-                category: category.trim(),
-                description: description.trim(),
-                amountCents: parseMoney(amount),
-                paymentMethod,
-                note: normalizedNote,
-              };
+        const input: CreateExpenseInput = {
+          category: category.trim(),
+          description: description.trim(),
+          amountCents: parseMoney(amount),
+          paymentMethod,
+          paymentStatus,
+          ...(normalizedNote.length === 0 ? {} : { note: normalizedNote }),
+        };
         void onSubmit(input).then(() => {
           setDescription('');
           setAmount('');
+          setPaymentStatus('open');
           setNote('');
         });
       }}
@@ -59,7 +60,7 @@ export function ExpenseForm({ busy, onSubmit }: ExpenseFormProps): React.JSX.Ele
         <ReceiptText size={20} aria-hidden="true" />
         <div>
           <h2>Registrar despesa</h2>
-          <p>Cadastre somente saídas efetivamente pagas pelo evento.</p>
+          <p>O valor entra no resultado mesmo que a despesa ainda esteja em aberto.</p>
         </div>
       </div>
       <label className="form-field">
@@ -90,7 +91,7 @@ export function ExpenseForm({ busy, onSubmit }: ExpenseFormProps): React.JSX.Ele
       </label>
       <div className="expense-form__row">
         <label className="form-field">
-          <span>Valor pago</span>
+          <span>Valor da despesa</span>
           <input
             disabled={busy}
             inputMode="decimal"
@@ -103,22 +104,38 @@ export function ExpenseForm({ busy, onSubmit }: ExpenseFormProps): React.JSX.Ele
           />
         </label>
         <label className="form-field">
-          <span>Forma de pagamento</span>
+          <span>Situação</span>
           <select
             disabled={busy}
             onChange={(event) => {
-              setPaymentMethod(event.target.value as PaymentMethod);
+              setPaymentStatus(event.target.value as ExpensePaymentStatus);
             }}
-            value={paymentMethod}
+            value={paymentStatus}
           >
-            {Object.entries(PAYMENT_LABELS).map(([method, label]) => (
-              <option key={method} value={method}>
+            {Object.entries(STATUS_LABELS).map(([status, label]) => (
+              <option key={status} value={status}>
                 {label}
               </option>
             ))}
           </select>
         </label>
       </div>
+      <label className="form-field">
+        <span>Forma de pagamento</span>
+        <select
+          disabled={busy}
+          onChange={(event) => {
+            setPaymentMethod(event.target.value as PaymentMethod);
+          }}
+          value={paymentMethod}
+        >
+          {Object.entries(PAYMENT_LABELS).map(([method, label]) => (
+            <option key={method} value={method}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="form-field">
         <span>Observação</span>
         <input

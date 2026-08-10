@@ -268,6 +268,7 @@ export const expenses = sqliteTable('expenses', {
   }).notNull(),
   note: text('note'),
   status: text('status', { enum: ['active', 'cancelled'] }).notNull(),
+  paymentStatus: text('payment_status', { enum: ['open', 'partial', 'paid'] }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),

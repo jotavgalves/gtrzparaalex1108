@@ -54,7 +54,7 @@ export function DashboardPage(): React.JSX.Element {
         <div>
           <span className="eyebrow">Consolidação em tempo real</span>
           <h1>Visão geral</h1>
-          <p>Vendas, despesas, caixa, estoque, ingressos e vouchers do evento ativo.</p>
+          <p>Vendas, despesas, custo do estoque, caixa, ingressos e vouchers do evento ativo.</p>
         </div>
         <button
           className="button button--secondary"
@@ -125,9 +125,9 @@ export function DashboardPage(): React.JSX.Element {
             </article>
             <article className="summary-card">
               <Banknote className="summary-card__icon" size={20} aria-hidden="true" />
-              <span>Despesas ativas</span>
+              <span>Despesas registradas</span>
               <strong>{formatMoney(state.activeExpensesCents)}</strong>
-              <small>Valores não cancelados</small>
+              <small>Todos os valores não cancelados, pagos ou não</small>
             </article>
             <article
               className={
@@ -139,7 +139,7 @@ export function DashboardPage(): React.JSX.Element {
               <TrendingUp className="summary-card__icon" size={20} aria-hidden="true" />
               <span>Resultado projetado</span>
               <strong>{formatMoney(state.projectedResultCents)}</strong>
-              <small>Receita menos despesas</small>
+              <small>Faturamento − despesas − estoque − taxas</small>
             </article>
             <article className="summary-card">
               <Banknote className="summary-card__icon" size={20} aria-hidden="true" />
@@ -163,9 +163,9 @@ export function DashboardPage(): React.JSX.Element {
             </article>
             <article className="insight-kpi">
               <Boxes size={19} aria-hidden="true" />
-              <span>Estoque do evento</span>
-              <strong>{state.inventory.units} un.</strong>
-              <small>{formatMoney(state.inventory.stockCostCents)} em custo</small>
+              <span>Custo do estoque</span>
+              <strong>{formatMoney(state.inventory.stockCostCents)}</strong>
+              <small>Capital aportado no estoque deste evento</small>
             </article>
             <article className="insight-kpi">
               <Banknote size={19} aria-hidden="true" />

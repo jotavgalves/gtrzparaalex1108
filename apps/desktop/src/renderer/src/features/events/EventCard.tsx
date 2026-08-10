@@ -6,6 +6,7 @@ import {
   Pencil,
   RotateCcw,
   Square,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useState, type SyntheticEvent } from 'react';
@@ -19,6 +20,7 @@ interface EventCardProps {
   readonly onSelect: (eventId: string) => Promise<void>;
   readonly onRename: (eventId: string, name: string) => Promise<void>;
   readonly onRequestClose: (eventId: string) => void;
+  readonly onRequestDelete: (eventId: string) => void;
   readonly onChangeStatus: (eventId: string, status: EventStatus) => Promise<void>;
 }
 
@@ -42,6 +44,7 @@ export function EventCard({
   onSelect,
   onRename,
   onRequestClose,
+  onRequestDelete,
   onChangeStatus,
 }: EventCardProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
@@ -179,6 +182,18 @@ export function EventCard({
             Restaurar histórico
           </button>
         ) : null}
+
+        <button
+          className="button button--danger button--compact"
+          disabled={busy}
+          onClick={() => {
+            onRequestDelete(event.id);
+          }}
+          type="button"
+        >
+          <Trash2 size={15} aria-hidden="true" />
+          Excluir definitivamente
+        </button>
       </div>
     </article>
   );

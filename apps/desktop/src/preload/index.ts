@@ -6,6 +6,8 @@ import {
   changeEventStatusInputSchema,
   changeProductionPasswordInputSchema,
   createEventInputSchema,
+  deleteEventInputSchema,
+  eventDeletionResultSchema,
   eventListSchema,
   eventSchema,
   IPC_CHANNELS,
@@ -24,6 +26,8 @@ import {
   type ChangeEventStatusInput,
   type ChangeProductionPasswordInput,
   type CreateEventInput,
+  type DeleteEventInput,
+  type EventDeletionResult,
   type GtrzDesktopApi,
   type GtrzEvent,
   type OperationResult,
@@ -79,6 +83,11 @@ const api: GtrzDesktopApi = {
         parsedInput,
       );
       return eventSchema.parse(payload);
+    },
+    async delete(input: DeleteEventInput): Promise<EventDeletionResult> {
+      const parsedInput = deleteEventInputSchema.parse(input);
+      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsDelete, parsedInput);
+      return eventDeletionResultSchema.parse(payload);
     },
     async setActive(input: SetActiveEventInput): Promise<SessionState> {
       const parsedInput = setActiveEventInputSchema.parse(input);

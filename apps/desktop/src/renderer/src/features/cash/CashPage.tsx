@@ -38,7 +38,9 @@ export function CashPage(): React.JSX.Element {
         <div>
           <span className="eyebrow">Conciliação derivada das operações</span>
           <h1>Caixa administrativo</h1>
-          <p>Vendas, vouchers, despesas, taxas e movimentações são consolidados automaticamente.</p>
+          <p>
+            Resultado = faturamento − despesas registradas − custo do estoque − taxas da maquininha.
+          </p>
         </div>
         <button
           className="button button--secondary"
@@ -59,8 +61,12 @@ export function CashPage(): React.JSX.Element {
           <strong>{formatMoney(state?.grossSalesCents ?? 0)}</strong>
         </article>
         <article className="summary-card">
-          <span>Despesas ativas</span>
+          <span>Despesas registradas</span>
           <strong>{formatMoney(state?.activeExpensesCents ?? 0)}</strong>
+        </article>
+        <article className="summary-card">
+          <span>Custo do estoque</span>
+          <strong>{formatMoney(state?.stockCostCents ?? 0)}</strong>
         </article>
         <article className="summary-card">
           <span>Taxas da maquininha</span>
@@ -70,7 +76,13 @@ export function CashPage(): React.JSX.Element {
           <span>Caixa físico esperado</span>
           <strong>{formatMoney(state?.expectedCashCents ?? 0)}</strong>
         </article>
-        <article className="summary-card">
+        <article
+          className={
+            (state?.projectedResultCents ?? 0) < 0
+              ? 'summary-card summary-card--danger'
+              : 'summary-card'
+          }
+        >
           <span>Resultado projetado</span>
           <strong>{formatMoney(state?.projectedResultCents ?? 0)}</strong>
         </article>
@@ -134,7 +146,9 @@ export function CashPage(): React.JSX.Element {
                 <WalletCards size={20} aria-hidden="true" />
                 <div>
                   <h2>Conferência</h2>
-                  <p>Taxas de cartão reduzem o resultado, mas não o dinheiro físico da gaveta.</p>
+                  <p>
+                    A situação em aberto, parcial ou paga é controle interno e não muda o resultado.
+                  </p>
                 </div>
               </div>
               <dl>
@@ -145,6 +159,10 @@ export function CashPage(): React.JSX.Element {
                 <div>
                   <dt>Despesas em dinheiro</dt>
                   <dd>{formatMoney(state.cashExpensesCents)}</dd>
+                </div>
+                <div>
+                  <dt>Custo aportado no estoque</dt>
+                  <dd>{formatMoney(state.stockCostCents)}</dd>
                 </div>
                 <div>
                   <dt>Taxas da maquininha</dt>

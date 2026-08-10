@@ -10,5 +10,9 @@ export function getDashboardStateWithTerminal(database: DatabaseContext): Databa
   return {
     ...dashboard,
     projectedResultCents: cash.projectedResultCents,
+    inventory: {
+      ...dashboard.inventory,
+      stockCostCents: cash.stockCostCents,
+    },
   };
 }

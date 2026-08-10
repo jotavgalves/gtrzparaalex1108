@@ -12,6 +12,7 @@ import {
   IPC_CHANNELS,
   openCashRegisterInputSchema,
   recordCashMovementInputSchema,
+  updateExpensePaymentStatusInputSchema,
 } from '@gtrz/contracts';
 import {
   cancelExpense,
@@ -22,6 +23,7 @@ import {
   getExpenseState,
   openCashRegister,
   recordCashMovement,
+  updateExpensePaymentStatus,
   type DatabaseContext,
 } from '@gtrz/database';
 
@@ -36,6 +38,7 @@ const FINANCE_CHANNELS = [
   IPC_CHANNELS.cashClose,
   IPC_CHANNELS.expensesGetState,
   IPC_CHANNELS.expensesCreate,
+  IPC_CHANNELS.expensesUpdatePaymentStatus,
   IPC_CHANNELS.expensesCancel,
   IPC_CHANNELS.expensesDelete,
 ] as const;
@@ -74,22 +77,21 @@ export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): 
 
   ipcMain.handle(IPC_CHANNELS.expensesCreate, (_event, payload: unknown) => {
     const input = createExpenseInputSchema.parse(payload);
-    const databaseInput =
-      input.note === undefined
-        ? {
-            category: input.category,
-            description: input.description,
-            amountCents: input.amountCents,
-            paymentMethod: input.paymentMethod,
-          }
-        : {
-            category: input.category,
-            description: input.description,
-            amountCents: input.amountCents,
-            paymentMethod: input.paymentMethod,
-            note: input.note,
-          };
-    return expenseSchema.parse(createExpense(options.getDatabase(), databaseInput));
+    return expenseSchema.parse(
+      createExpense(options.getDatabase(), {
+        category: input.category,
+        description: input.description,
+        amountCents: input.amountCents,
+        paymentMethod: input.paymentMethod,
+        ...(input.paymentStatus === undefined ? {} : { paymentStatus: input.paymentStatus }),
+        ...(input.note === undefined ? {} : { note: input.note }),
+      }),
+    );
+  });
+
+  ipcMain.handle(IPC_CHANNELS.expensesUpdatePaymentStatus, (_event, payload: unknown) => {
+    const input = updateExpensePaymentStatusInputSchema.parse(payload);
+    return expenseSchema.parse(updateExpensePaymentStatus(options.getDatabase(), input));
   });
 
   ipcMain.handle(IPC_CHANNELS.expensesCancel, (_event, payload: unknown) => {

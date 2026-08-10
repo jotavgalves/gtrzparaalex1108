@@ -126,7 +126,7 @@ describe('event close summary', () => {
       },
       grossSalesCents: 1600,
       activeExpensesCents: 200,
-      projectedResultCents: 1400,
+      projectedResultCents: 150,
       ticketSalesCount: 2,
       ticketSoldQuantity: 2,
       ticketCourtesyQuantity: 1,

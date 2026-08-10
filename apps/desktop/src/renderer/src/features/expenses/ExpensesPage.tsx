@@ -20,24 +20,29 @@ export function ExpensesPage(): React.JSX.Element {
     message,
     reload,
     createExpense,
+    updatePaymentStatus,
     cancelExpense,
     deleteExpense,
   } = useExpenses();
   const expenses = state?.expenses ?? [];
   const activeExpenses = expenses.filter((expense) => expense.status === 'active');
-  const cancelledExpenses = expenses.filter((expense) => expense.status === 'cancelled');
   const totalCents = activeExpenses.reduce((total, expense) => total + expense.amountCents, 0);
-  const cashCents = activeExpenses
-    .filter((expense) => expense.paymentMethod === 'cash')
-    .reduce((total, expense) => total + expense.amountCents, 0);
+  const openCount = activeExpenses.filter((expense) => expense.paymentStatus === 'open').length;
+  const partialCount = activeExpenses.filter(
+    (expense) => expense.paymentStatus === 'partial',
+  ).length;
+  const paidCount = activeExpenses.filter((expense) => expense.paymentStatus === 'paid').length;
 
   return (
     <section className="feature-page">
       <header className="feature-header">
         <div>
-          <span className="eyebrow">Saídas efetivamente pagas</span>
+          <span className="eyebrow">Compromissos financeiros do evento</span>
           <h1>Despesas</h1>
-          <p>Registre gastos, cancele quando necessário ou exclua um lançamento incorreto.</p>
+          <p>
+            Controle o pagamento como em aberto, parcial ou pago. Toda despesa não cancelada reduz o
+            resultado, independentemente dessa situação.
+          </p>
         </div>
         <button
           className="button button--secondary"
@@ -54,20 +59,20 @@ export function ExpensesPage(): React.JSX.Element {
 
       <div className="summary-grid summary-grid--compact">
         <article className="summary-card summary-card--accent">
-          <span>Total ativo</span>
+          <span>Total de despesas</span>
           <strong>{formatMoney(totalCents)}</strong>
         </article>
         <article className="summary-card">
-          <span>Pago em dinheiro</span>
-          <strong>{formatMoney(cashCents)}</strong>
+          <span>Em aberto</span>
+          <strong>{openCount}</strong>
         </article>
         <article className="summary-card">
-          <span>Lançamentos ativos</span>
-          <strong>{activeExpenses.length}</strong>
+          <span>Parciais</span>
+          <strong>{partialCount}</strong>
         </article>
         <article className="summary-card">
-          <span>Cancelados</span>
-          <strong>{cancelledExpenses.length}</strong>
+          <span>Pagas</span>
+          <strong>{paidCount}</strong>
         </article>
       </div>
 
@@ -92,7 +97,7 @@ export function ExpensesPage(): React.JSX.Element {
               <div className="empty-state">
                 <ReceiptText size={32} aria-hidden="true" />
                 <h2>Nenhuma despesa registrada</h2>
-                <p>Cadastre a primeira saída financeira do evento.</p>
+                <p>Cadastre o primeiro compromisso financeiro do evento.</p>
               </div>
             ) : null}
             {expenses.map((expense) => (
@@ -102,6 +107,7 @@ export function ExpensesPage(): React.JSX.Element {
                 key={expense.id}
                 onCancel={cancelExpense}
                 onDelete={deleteExpense}
+                onPaymentStatusChange={updatePaymentStatus}
               />
             ))}
           </div>

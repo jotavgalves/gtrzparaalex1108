@@ -6,6 +6,7 @@ import type { DatabasePaymentMethod } from './operation-types';
 import type { DatabaseContext } from './types';
 
 export type DatabaseExpenseStatus = 'active' | 'cancelled';
+export type DatabaseExpensePaymentStatus = 'open' | 'partial' | 'paid';
 
 export interface DatabaseExpense {
   readonly id: string;
@@ -16,6 +17,7 @@ export interface DatabaseExpense {
   readonly paymentMethod: DatabasePaymentMethod;
   readonly note: string | null;
   readonly status: DatabaseExpenseStatus;
+  readonly paymentStatus: DatabaseExpensePaymentStatus;
   readonly createdAt: number;
   readonly cancelledAt: number | null;
   readonly updatedAt: number;
@@ -35,6 +37,7 @@ interface ExpenseRow {
   readonly payment_method: DatabasePaymentMethod;
   readonly note: string | null;
   readonly status: DatabaseExpenseStatus;
+  readonly payment_status: DatabaseExpensePaymentStatus;
   readonly created_at: number;
   readonly cancelled_at: number | null;
   readonly updated_at: number;
@@ -71,6 +74,7 @@ function mapExpense(row: ExpenseRow): DatabaseExpense {
     paymentMethod: row.payment_method,
     note: row.note,
     status: row.status,
+    paymentStatus: row.payment_status,
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at,
     updatedAt: row.updated_at,
@@ -81,7 +85,7 @@ function requireExpense(database: DatabaseContext, expenseId: string): ExpenseRo
   const row = database.sqlite
     .prepare(
       `SELECT id, event_id, category, description, amount_cents, payment_method,
-              note, status, created_at, cancelled_at, updated_at
+              note, status, payment_status, created_at, cancelled_at, updated_at
        FROM expenses WHERE id = ?`,
     )
     .get(expenseId) as ExpenseRow | undefined;
@@ -103,10 +107,12 @@ export function getExpenseState(database: DatabaseContext): DatabaseExpenseState
   const rows = database.sqlite
     .prepare(
       `SELECT id, event_id, category, description, amount_cents, payment_method,
-              note, status, created_at, cancelled_at, updated_at
+              note, status, payment_status, created_at, cancelled_at, updated_at
        FROM expenses
        WHERE event_id = ?
-       ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END, updated_at DESC`,
+       ORDER BY CASE status WHEN 'active' THEN 0 ELSE 1 END,
+                CASE payment_status WHEN 'open' THEN 0 WHEN 'partial' THEN 1 ELSE 2 END,
+                updated_at DESC`,
     )
     .all(eventId) as ExpenseRow[];
   return { activeEventId: eventId, expenses: rows.map(mapExpense) };
@@ -119,6 +125,7 @@ export function createExpense(
     readonly description: string;
     readonly amountCents: number;
     readonly paymentMethod: DatabasePaymentMethod;
+    readonly paymentStatus?: DatabaseExpensePaymentStatus;
     readonly note?: string;
   },
 ): DatabaseExpense {
@@ -133,6 +140,7 @@ export function createExpense(
   const category = input.category.trim();
   const description = input.description.trim();
   const note = normalizeOptionalText(input.note);
+  const paymentStatus = input.paymentStatus ?? 'open';
   const now = Date.now();
 
   database.sqlite.transaction(() => {
@@ -140,8 +148,8 @@ export function createExpense(
       .prepare(
         `INSERT INTO expenses
          (id, event_id, category, description, amount_cents, payment_method,
-          note, status, created_at, cancelled_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, NULL, ?)`,
+          note, status, payment_status, created_at, cancelled_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL, ?)`,
       )
       .run(
         expenseId,
@@ -151,6 +159,7 @@ export function createExpense(
         input.amountCents,
         input.paymentMethod,
         note,
+        paymentStatus,
         now,
         now,
       );
@@ -165,11 +174,54 @@ export function createExpense(
         description,
         note,
         paymentMethod: input.paymentMethod,
+        paymentStatus,
       },
     });
   })();
 
   return mapExpense(requireExpense(database, expenseId));
+}
+
+export function updateExpensePaymentStatus(
+  database: DatabaseContext,
+  input: { readonly expenseId: string; readonly paymentStatus: DatabaseExpensePaymentStatus },
+): DatabaseExpense {
+  requireProduction(database);
+  const eventId = requireActiveEvent(database);
+  const expense = requireExpense(database, input.expenseId);
+
+  if (expense.event_id !== eventId) {
+    throw new Error('A despesa não pertence ao evento ativo.');
+  }
+
+  if (expense.status === 'cancelled') {
+    throw new Error('Não é possível alterar o pagamento de uma despesa cancelada.');
+  }
+
+  if (expense.payment_status === input.paymentStatus) {
+    return mapExpense(expense);
+  }
+
+  const now = Date.now();
+  database.sqlite.transaction(() => {
+    database.sqlite
+      .prepare('UPDATE expenses SET payment_status = ?, updated_at = ? WHERE id = ?')
+      .run(input.paymentStatus, now, expense.id);
+    appendAudit(database, {
+      action: 'expense.payment-status-changed',
+      entityType: 'expense',
+      entityId: expense.id,
+      eventId,
+      details: {
+        after: input.paymentStatus,
+        before: expense.payment_status,
+        amountCents: expense.amount_cents,
+        description: expense.description,
+      },
+    });
+  })();
+
+  return mapExpense(requireExpense(database, expense.id));
 }
 
 export function cancelExpense(
@@ -243,6 +295,7 @@ export function deleteExpense(
         description: expense.description,
         note: expense.note,
         paymentMethod: expense.payment_method,
+        paymentStatus: expense.payment_status,
         previousStatus: expense.status,
         reason,
       },

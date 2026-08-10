@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { EventStatus, GtrzEvent } from '@gtrz/contracts';
+import type { EventDeletionResult, EventStatus, GtrzEvent } from '@gtrz/contracts';
 
 import { useSession } from '../../shared/session/session-context';
 
@@ -11,6 +11,11 @@ interface EventsState {
   readonly create: (name: string, startsAt: number) => Promise<void>;
   readonly rename: (eventId: string, name: string) => Promise<void>;
   readonly changeStatus: (eventId: string, status: EventStatus) => Promise<void>;
+  readonly deletePermanently: (
+    eventId: string,
+    confirmationName: string,
+    reason: string,
+  ) => Promise<EventDeletionResult>;
   readonly select: (eventId: string) => Promise<void>;
   readonly reload: () => Promise<void>;
 }
@@ -23,7 +28,7 @@ export function useEvents(): EventsState {
   const [events, setEvents] = useState<readonly GtrzEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { setActiveEvent } = useSession();
+  const { setActiveEvent, refresh } = useSession();
 
   const reload = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -79,6 +84,27 @@ export function useEvents(): EventsState {
     [executeAndReload],
   );
 
+  const deletePermanently = useCallback(
+    async (
+      eventId: string,
+      confirmationName: string,
+      reason: string,
+    ): Promise<EventDeletionResult> => {
+      setError(null);
+
+      try {
+        const result = await window.gtrz.events.delete({ eventId, confirmationName, reason });
+        await Promise.all([reload(), refresh()]);
+        return result;
+      } catch (deletionError: unknown) {
+        const message = getErrorMessage(deletionError);
+        setError(message);
+        throw new Error(message);
+      }
+    },
+    [refresh, reload],
+  );
+
   const select = useCallback(
     async (eventId: string): Promise<void> => {
       setError(null);
@@ -101,6 +127,7 @@ export function useEvents(): EventsState {
     create,
     rename,
     changeStatus,
+    deletePermanently,
     select,
     reload,
   };

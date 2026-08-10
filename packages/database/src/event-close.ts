@@ -1,4 +1,5 @@
-import { getCashState, type DatabaseCashState } from './cash';
+import { getCashState } from './cash-terminal';
+import type { DatabaseCashState } from './cash';
 import { getSessionState } from './control';
 import type { DatabaseContext } from './types';
 

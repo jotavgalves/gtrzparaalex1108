@@ -24,6 +24,7 @@ import {
   recordCashMovement,
   recordStockMovement,
   switchProfile,
+  updateExpensePaymentStatus,
   type DatabaseContext,
 } from './index';
 import { createManagedVoucher } from './voucher-management';
@@ -77,7 +78,7 @@ function createOrder(
 }
 
 describe('cash and expenses database', () => {
-  it('concilia vendas por meio, voucher, despesas e movimentações físicas', async () => {
+  it('concilia vendas, despesas, estoque e movimentações físicas', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento financeiro', startsAt: Date.now() });
     const productId = seedProduct(database);
@@ -128,10 +129,40 @@ describe('cash and expenses database', () => {
       },
       grossSalesCents: 2000,
       activeExpensesCents: 500,
+      stockCostCents: 2000,
       cashExpensesCents: 300,
       expectedCashCents: 1850,
-      projectedResultCents: 1500,
+      projectedResultCents: -500,
     });
+    database.close();
+  });
+
+  it('mantém a despesa no resultado ao alternar entre aberto, parcial e pago', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento situação despesa', startsAt: Date.now() });
+    const expense = createExpense(database, {
+      category: 'Estrutura',
+      description: 'Locação de equipamento',
+      amountCents: 1200,
+      paymentMethod: 'pix',
+    });
+
+    expect(expense.paymentStatus).toBe('open');
+    expect(getCashState(database).projectedResultCents).toBe(-1200);
+
+    const partial = updateExpensePaymentStatus(database, {
+      expenseId: expense.id,
+      paymentStatus: 'partial',
+    });
+    expect(partial.paymentStatus).toBe('partial');
+    expect(getCashState(database).projectedResultCents).toBe(-1200);
+
+    const paid = updateExpensePaymentStatus(database, {
+      expenseId: expense.id,
+      paymentStatus: 'paid',
+    });
+    expect(paid.paymentStatus).toBe('paid');
+    expect(getCashState(database).projectedResultCents).toBe(-1200);
     database.close();
   });
 

@@ -1,11 +1,12 @@
 import { CalendarPlus, RefreshCw } from 'lucide-react';
 import { useMemo, useState, type SyntheticEvent } from 'react';
 
-import type { EventCloseResult, EventStatus } from '@gtrz/contracts';
+import type { EventCloseResult, EventDeletionResult, EventStatus } from '@gtrz/contracts';
 
 import { useSession } from '../../shared/session/session-context';
 import { EventCard } from './EventCard';
 import { EventClosePanel } from './EventClosePanel';
+import { EventDeletePanel } from './EventDeletePanel';
 import { useEvents } from './useEvents';
 
 function getDefaultDateTime(): string {
@@ -16,15 +17,28 @@ function getDefaultDateTime(): string {
 
 export function EventsPage(): React.JSX.Element {
   const { state: sessionState, refresh: refreshSession } = useSession();
-  const { events, loading, error, create, rename, changeStatus, select, reload } = useEvents();
+  const {
+    events,
+    loading,
+    error,
+    create,
+    rename,
+    changeStatus,
+    deletePermanently,
+    select,
+    reload,
+  } = useEvents();
   const [name, setName] = useState('');
   const [startsAt, setStartsAt] = useState(getDefaultDateTime);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [closingEventId, setClosingEventId] = useState<string | null>(null);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [closeMessage, setCloseMessage] = useState<string | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const activeEvent = sessionState?.activeEvent ?? null;
+  const deletingEvent = events.find((event) => event.id === deletingEventId) ?? null;
 
   const counters = useMemo(
     () => ({
@@ -79,6 +93,13 @@ export function EventsPage(): React.JSX.Element {
     await Promise.all([reload(), refreshSession()]);
   }
 
+  function handleDeleteCompleted(result: EventDeletionResult): void {
+    setDeletingEventId(null);
+    setDeleteMessage(
+      `${result.eventName} excluído definitivamente. Foram removidas ${String(result.removedOrdersCount)} comandas, ${String(result.removedExpensesCount)} despesas e ${String(result.removedStockMovementsCount)} movimentações de estoque.`,
+    );
+  }
+
   return (
     <section className="feature-page">
       <header className="feature-header">
@@ -120,6 +141,7 @@ export function EventsPage(): React.JSX.Element {
       </div>
 
       {closeMessage === null ? null : <div className="event-close-success">{closeMessage}</div>}
+      {deleteMessage === null ? null : <div className="event-close-success">{deleteMessage}</div>}
 
       {activeEvent !== null && closingEventId === activeEvent.id ? (
         <EventClosePanel
@@ -128,6 +150,18 @@ export function EventsPage(): React.JSX.Element {
           onCompleted={handleCloseCompleted}
         />
       ) : null}
+
+      {deletingEvent === null ? null : (
+        <EventDeletePanel
+          eventId={deletingEvent.id}
+          eventName={deletingEvent.name}
+          onCancel={() => {
+            setDeletingEventId(null);
+          }}
+          onCompleted={handleDeleteCompleted}
+          onDelete={deletePermanently}
+        />
+      )}
 
       <div className="control-layout">
         <form className="panel form-panel" onSubmit={(formEvent) => void handleCreate(formEvent)}>
@@ -201,7 +235,15 @@ export function EventsPage(): React.JSX.Element {
               }
               onRequestClose={(eventId) => {
                 setCloseMessage(null);
+                setDeleteMessage(null);
+                setDeletingEventId(null);
                 setClosingEventId(eventId);
+              }}
+              onRequestDelete={(eventId) => {
+                setCloseMessage(null);
+                setDeleteMessage(null);
+                setClosingEventId(null);
+                setDeletingEventId(eventId);
               }}
               onSelect={(eventId) => runEventAction(eventId, () => select(eventId))}
             />

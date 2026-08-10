@@ -1,11 +1,15 @@
 import { Ban, CreditCard, Settings2, Trash2, WalletCards } from 'lucide-react';
 import { useState } from 'react';
 
-import type { Expense } from '@gtrz/contracts';
+import type { Expense, ExpensePaymentStatus } from '@gtrz/contracts';
 
 interface ExpenseCardProps {
   readonly expense: Expense;
   readonly busy: boolean;
+  readonly onPaymentStatusChange: (
+    expenseId: string,
+    paymentStatus: ExpensePaymentStatus,
+  ) => Promise<void>;
   readonly onCancel: (expenseId: string, reason: string) => Promise<void>;
   readonly onDelete: (expenseId: string, reason: string) => Promise<void>;
 }
@@ -17,6 +21,18 @@ const PAYMENT_LABELS = {
   'debit-card': 'Débito',
 } as const;
 
+const STATUS_LABELS: Readonly<Record<ExpensePaymentStatus, string>> = {
+  open: 'Em aberto',
+  partial: 'Parcial',
+  paid: 'Paga',
+};
+
+const STATUS_CLASSES: Readonly<Record<ExpensePaymentStatus, string>> = {
+  open: 'status-badge status-badge--open',
+  partial: 'status-badge status-badge--selected',
+  paid: 'status-badge status-badge--closed',
+};
+
 function formatMoney(cents: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -27,6 +43,7 @@ function formatMoney(cents: number): string {
 export function ExpenseCard({
   expense,
   busy,
+  onPaymentStatusChange,
   onCancel,
   onDelete,
 }: ExpenseCardProps): React.JSX.Element {
@@ -42,12 +59,12 @@ export function ExpenseCard({
         </span>
         <span
           className={
-            expense.status === 'active'
-              ? 'status-badge status-badge--open'
-              : 'status-badge status-badge--archived'
+            expense.status === 'cancelled'
+              ? 'status-badge status-badge--archived'
+              : STATUS_CLASSES[expense.paymentStatus]
           }
         >
-          {expense.status === 'active' ? 'Ativa' : 'Cancelada'}
+          {expense.status === 'cancelled' ? 'Cancelada' : STATUS_LABELS[expense.paymentStatus]}
         </span>
       </header>
 
@@ -79,8 +96,33 @@ export function ExpenseCard({
 
       {managing ? (
         <div className="expense-manage-drawer">
+          {expense.status === 'active' ? (
+            <label className="form-field">
+              <span>Situação do pagamento</span>
+              <select
+                disabled={busy}
+                onChange={(event) => {
+                  void onPaymentStatusChange(
+                    expense.id,
+                    event.target.value as ExpensePaymentStatus,
+                  );
+                }}
+                value={expense.paymentStatus}
+              >
+                {Object.entries(STATUS_LABELS).map(([status, label]) => (
+                  <option key={status} value={status}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <small>
+                Esta situação é somente controle interno e não altera o cálculo do resultado.
+              </small>
+            </label>
+          ) : null}
+
           <label className="form-field">
-            <span>Motivo</span>
+            <span>Motivo para cancelar ou excluir</span>
             <input
               disabled={busy}
               maxLength={240}
@@ -105,7 +147,7 @@ export function ExpenseCard({
                 type="button"
               >
                 <Ban size={15} aria-hidden="true" />
-                Somente cancelar
+                Cancelar lançamento
               </button>
             ) : null}
             <button
@@ -124,7 +166,8 @@ export function ExpenseCard({
             </button>
           </div>
           <small>
-            A exclusão remove o lançamento. A auditoria da exclusão permanece registrada.
+            Cancelar retira a despesa do resultado. Excluir remove o lançamento e preserva somente o
+            registro da exclusão na auditoria.
           </small>
         </div>
       ) : null}

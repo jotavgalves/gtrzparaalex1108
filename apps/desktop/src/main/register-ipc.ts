@@ -6,6 +6,8 @@ import {
   changeEventStatusInputSchema,
   changeProductionPasswordInputSchema,
   createEventInputSchema,
+  deleteEventInputSchema,
+  eventDeletionResultSchema,
   eventListSchema,
   eventSchema,
   IPC_CHANNELS,
@@ -25,6 +27,7 @@ import {
   changeEventStatus,
   changeProductionPassword,
   createEvent,
+  deleteEventPermanently,
   getSessionState,
   listEvents,
   renameEvent,
@@ -61,6 +64,7 @@ const CONTROL_CHANNELS = [
   IPC_CHANNELS.eventsCreate,
   IPC_CHANNELS.eventsRename,
   IPC_CHANNELS.eventsChangeStatus,
+  IPC_CHANNELS.eventsDelete,
   IPC_CHANNELS.eventsSetActive,
   IPC_CHANNELS.sessionGetState,
   IPC_CHANNELS.sessionSwitchProfile,
@@ -116,6 +120,11 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     }
 
     return eventSchema.parse(changeEventStatus(database, input));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.eventsDelete, (_event, payload: unknown) => {
+    const input = deleteEventInputSchema.parse(payload);
+    return eventDeletionResultSchema.parse(deleteEventPermanently(options.getDatabase(), input));
   });
 
   ipcMain.handle(IPC_CHANNELS.eventsSetActive, (_event, payload: unknown) => {

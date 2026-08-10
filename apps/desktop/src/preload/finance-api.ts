@@ -12,6 +12,7 @@ import {
   IPC_CHANNELS,
   openCashRegisterInputSchema,
   recordCashMovementInputSchema,
+  updateExpensePaymentStatusInputSchema,
   type CancelExpenseInput,
   type CashApi,
   type CashState,
@@ -24,6 +25,7 @@ import {
   type ExpenseState,
   type OpenCashRegisterInput,
   type RecordCashMovementInput,
+  type UpdateExpensePaymentStatusInput,
 } from '@gtrz/contracts';
 
 export const cashApi: CashApi = {
@@ -60,6 +62,15 @@ export const expenseApi: ExpenseApi = {
   async create(input: CreateExpenseInput): Promise<Expense> {
     const parsedInput = createExpenseInputSchema.parse(input);
     const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.expensesCreate, parsedInput);
+    return expenseSchema.parse(payload);
+  },
+
+  async updatePaymentStatus(input: UpdateExpensePaymentStatusInput): Promise<Expense> {
+    const parsedInput = updateExpensePaymentStatusInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.expensesUpdatePaymentStatus,
+      parsedInput,
+    );
     return expenseSchema.parse(payload);
   },
 

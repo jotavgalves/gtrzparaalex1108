@@ -35,7 +35,7 @@ afterEach(async () => {
 });
 
 describe('payment terminal fees in finance', () => {
-  it('desconta taxas do resultado sem alterar faturamento bruto ou caixa físico', async () => {
+  it('desconta estoque e taxas do resultado sem alterar faturamento bruto ou caixa físico', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento taxas', startsAt: Date.now() });
     updatePaymentTerminalSettings(database, {
@@ -83,13 +83,15 @@ describe('payment terminal fees in finance', () => {
 
     const cash = getCashState(database);
     expect(cash.grossSalesCents).toBe(3000);
+    expect(cash.stockCostCents).toBe(1000);
     expect(cash.terminalFeesCents).toBe(70);
-    expect(cash.projectedResultCents).toBe(2930);
+    expect(cash.projectedResultCents).toBe(1930);
     expect(cash.expectedCashCents).toBe(0);
 
     const dashboard = getDashboardStateWithTerminal(database);
     expect(dashboard.grossSalesCents).toBe(3000);
-    expect(dashboard.projectedResultCents).toBe(2930);
+    expect(dashboard.inventory.stockCostCents).toBe(1000);
+    expect(dashboard.projectedResultCents).toBe(1930);
     database.close();
   });
 });

@@ -28,6 +28,7 @@ export const IPC_CHANNELS = {
   eventsCreate: 'events:create',
   eventsRename: 'events:rename',
   eventsChangeStatus: 'events:change-status',
+  eventsDelete: 'events:delete',
   eventsSetActive: 'events:set-active',
   eventClosePreview: 'event-close:preview',
   eventCloseComplete: 'event-close:complete',
@@ -80,6 +81,7 @@ export const IPC_CHANNELS = {
   cashClose: 'cash:close',
   expensesGetState: 'expenses:get-state',
   expensesCreate: 'expenses:create',
+  expensesUpdatePaymentStatus: 'expenses:update-payment-status',
   expensesCancel: 'expenses:cancel',
   expensesDelete: 'expenses:delete',
   ticketsGetState: 'tickets:get-state',
@@ -125,6 +127,25 @@ export const renameEventInputSchema = z.object({
 export const changeEventStatusInputSchema = z.object({
   eventId: z.uuid(),
   status: eventStatusSchema,
+});
+
+export const deleteEventInputSchema = z.object({
+  eventId: z.uuid(),
+  confirmationName: z.string().trim().min(2).max(100),
+  reason: z.string().trim().min(3).max(240),
+});
+
+export const eventDeletionResultSchema = z.object({
+  eventId: z.uuid(),
+  eventName: z.string().min(2).max(100),
+  deleted: z.literal(true),
+  removedOrdersCount: z.number().int().nonnegative(),
+  removedOpenOrdersCount: z.number().int().nonnegative(),
+  removedExpensesCount: z.number().int().nonnegative(),
+  removedVouchersCount: z.number().int().nonnegative(),
+  removedTicketSalesCount: z.number().int().nonnegative(),
+  removedStockMovementsCount: z.number().int().nonnegative(),
+  removedStockTransfersCount: z.number().int().nonnegative(),
 });
 
 export const setActiveEventInputSchema = z.object({
@@ -198,6 +219,8 @@ export type GtrzEvent = z.infer<typeof eventSchema>;
 export type CreateEventInput = z.infer<typeof createEventInputSchema>;
 export type RenameEventInput = z.infer<typeof renameEventInputSchema>;
 export type ChangeEventStatusInput = z.infer<typeof changeEventStatusInputSchema>;
+export type DeleteEventInput = z.infer<typeof deleteEventInputSchema>;
+export type EventDeletionResult = z.infer<typeof eventDeletionResultSchema>;
 export type SetActiveEventInput = z.infer<typeof setActiveEventInputSchema>;
 export type SessionState = z.infer<typeof sessionStateSchema>;
 export type SwitchProfileInput = z.infer<typeof switchProfileInputSchema>;
@@ -224,6 +247,7 @@ export interface GtrzDesktopApi {
     create(input: CreateEventInput): Promise<GtrzEvent>;
     rename(input: RenameEventInput): Promise<GtrzEvent>;
     changeStatus(input: ChangeEventStatusInput): Promise<GtrzEvent>;
+    delete(input: DeleteEventInput): Promise<EventDeletionResult>;
     setActive(input: SetActiveEventInput): Promise<SessionState>;
   };
   readonly eventClose: EventCloseApi;
