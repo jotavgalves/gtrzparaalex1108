@@ -116,6 +116,13 @@ export const addOrderItemInputSchema = z.object({
   quantity: z.number().int().positive(),
 });
 
+export const startOrderWithItemInputSchema = z.object({
+  servicePointId: z.uuid(),
+  itemKind: orderItemKindSchema,
+  itemId: z.uuid(),
+  quantity: z.number().int().positive(),
+});
+
 export const removeOrderItemInputSchema = z.object({
   orderId: z.uuid(),
   orderItemId: z.uuid(),
@@ -179,6 +186,7 @@ export type CreateServicePointInput = z.infer<typeof createServicePointInputSche
 export type OpenOrderInput = z.infer<typeof openOrderInputSchema>;
 export type GetOrderInput = z.infer<typeof getOrderInputSchema>;
 export type AddOrderItemInput = z.infer<typeof addOrderItemInputSchema>;
+export type StartOrderWithItemInput = z.infer<typeof startOrderWithItemInputSchema>;
 export type RemoveOrderItemInput = z.infer<typeof removeOrderItemInputSchema>;
 export type BindOrderVoucherInput = z.infer<typeof bindOrderVoucherInputSchema>;
 export type UnbindOrderVoucherInput = z.infer<typeof unbindOrderVoucherInputSchema>;
@@ -190,6 +198,7 @@ export interface OperationsApi {
   createServicePoint(input: CreateServicePointInput): Promise<ServicePoint>;
   openOrder(input: OpenOrderInput): Promise<Order>;
   getOrder(orderId: string): Promise<Order>;
+  startOrderWithItem(input: StartOrderWithItemInput): Promise<Order>;
   addItem(input: AddOrderItemInput): Promise<Order>;
   removeItem(input: RemoveOrderItemInput): Promise<Order>;
   bindVoucher(input: BindOrderVoucherInput): Promise<Order>;

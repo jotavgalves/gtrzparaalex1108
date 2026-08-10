@@ -217,8 +217,7 @@ function listRecentOrders(database: DatabaseContext, eventId: string): readonly 
               subtotal_cents, discount_cents, total_cents, opened_at, closed_at, updated_at
        FROM orders
        WHERE event_id = ? AND status IN ('paid', 'cancelled')
-       ORDER BY updated_at DESC
-       LIMIT 25`,
+       ORDER BY updated_at DESC`,
     )
     .all(eventId) as OperationOrderRow[];
   return rows.map((row) => mapOrder(database, row));

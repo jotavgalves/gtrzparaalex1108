@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { appendAudit } from './audit';
-import { getOrder, recomputeOpenOrder, requireOpenOrderRow } from './operation-core';
+import { getOrder, openOrder, recomputeOpenOrder, requireOpenOrderRow } from './operation-core';
 import { requireAvailableCatalogItem } from './operation-stock';
 import type { DatabaseOrder, DatabaseOrderItemKind } from './operation-types';
 import type { DatabaseContext } from './types';
@@ -80,6 +80,26 @@ export function addOrderItem(
   })();
 
   return getOrder(database, input.orderId);
+}
+
+export function startOrderWithItem(
+  database: DatabaseContext,
+  input: {
+    readonly servicePointId: string;
+    readonly itemKind: DatabaseOrderItemKind;
+    readonly itemId: string;
+    readonly quantity: number;
+  },
+): DatabaseOrder {
+  return database.sqlite.transaction(() => {
+    const order = openOrder(database, input.servicePointId);
+    return addOrderItem(database, {
+      orderId: order.id,
+      itemKind: input.itemKind,
+      itemId: input.itemId,
+      quantity: input.quantity,
+    });
+  })();
 }
 
 export function removeOrderItem(

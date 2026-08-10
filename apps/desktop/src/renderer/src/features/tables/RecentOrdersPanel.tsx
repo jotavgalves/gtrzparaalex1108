@@ -1,4 +1,4 @@
-import { History, RotateCcw } from 'lucide-react';
+import { ChevronDown, History, RotateCcw } from 'lucide-react';
 
 import type { Order } from '@gtrz/contracts';
 
@@ -7,6 +7,8 @@ import { CancellationForm } from './CancellationForm';
 interface RecentOrdersPanelProps {
   readonly orders: readonly Order[];
   readonly busy: boolean;
+  readonly canCancel: boolean;
+  readonly title: string;
   readonly onCancel: (orderId: string, reason: string) => Promise<void>;
 }
 
@@ -18,9 +20,7 @@ function formatMoney(cents: number): string {
 }
 
 function formatDate(timestamp: number | null): string {
-  if (timestamp === null) {
-    return 'Sem horário de fechamento';
-  }
+  if (timestamp === null) return 'Sem horário de fechamento';
 
   return new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'short',
@@ -31,61 +31,72 @@ function formatDate(timestamp: number | null): string {
 export function RecentOrdersPanel({
   orders,
   busy,
+  canCancel,
+  title,
   onCancel,
 }: RecentOrdersPanelProps): React.JSX.Element {
   return (
-    <article className="panel recent-orders-panel">
-      <div className="panel__heading">
-        <History size={20} aria-hidden="true" />
-        <div>
-          <h2>Vendas e cancelamentos recentes</h2>
-          <p>Estornos devolvem exatamente as unidades registradas na venda original.</p>
-        </div>
-      </div>
+    <details className="history-drawer">
+      <summary className="history-drawer__summary">
+        <span className="history-drawer__identity">
+          <History size={19} aria-hidden="true" />
+          <span>
+            <strong>{title}</strong>
+            <small>
+              {orders.length === 0
+                ? 'Nenhuma venda ou cancelamento'
+                : `${String(orders.length)} registro(s)`}
+            </small>
+          </span>
+        </span>
+        <ChevronDown className="history-drawer__chevron" size={18} aria-hidden="true" />
+      </summary>
 
-      {orders.length === 0 ? (
-        <p className="operation-empty">Nenhuma venda concluída neste evento.</p>
-      ) : (
-        <div className="recent-order-list">
-          {orders.map((order) => (
-            <article className="recent-order-card" key={order.id}>
-              <div className="recent-order-card__summary">
-                <span>
-                  <strong>{order.servicePointLabel}</strong>
-                  <small>{formatDate(order.closedAt)}</small>
-                </span>
-                <span
-                  className={
-                    order.status === 'cancelled'
-                      ? 'status-badge status-badge--archived'
-                      : 'status-badge status-badge--open'
-                  }
-                >
-                  {order.status === 'cancelled' ? 'Cancelada' : 'Paga'}
-                </span>
-                <strong>{formatMoney(order.totalCents)}</strong>
-              </div>
-
-              <p className="recent-order-card__items">
-                {order.items
-                  .map((item) => `${String(item.quantity)}× ${item.itemName}`)
-                  .join(' · ')}
-              </p>
-
-              {order.status === 'paid' ? (
-                <div className="recent-order-card__cancel">
-                  <RotateCcw size={18} aria-hidden="true" />
-                  <CancellationForm
-                    busy={busy}
-                    label="Estornar venda"
-                    onSubmit={(reason) => onCancel(order.id, reason)}
-                  />
+      <div className="history-drawer__content">
+        {orders.length === 0 ? (
+          <p className="operation-empty">Nenhuma venda concluída neste histórico.</p>
+        ) : (
+          <div className="recent-order-list">
+            {orders.map((order) => (
+              <article className="recent-order-card" key={order.id}>
+                <div className="recent-order-card__summary">
+                  <span>
+                    <strong>{order.servicePointLabel}</strong>
+                    <small>{formatDate(order.closedAt)}</small>
+                  </span>
+                  <span
+                    className={
+                      order.status === 'cancelled'
+                        ? 'status-badge status-badge--archived'
+                        : 'status-badge status-badge--open'
+                    }
+                  >
+                    {order.status === 'cancelled' ? 'Cancelada' : 'Paga'}
+                  </span>
+                  <strong>{formatMoney(order.totalCents)}</strong>
                 </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      )}
-    </article>
+
+                <p className="recent-order-card__items">
+                  {order.items
+                    .map((item) => `${String(item.quantity)}× ${item.itemName}`)
+                    .join(' · ')}
+                </p>
+
+                {canCancel && order.status === 'paid' ? (
+                  <div className="recent-order-card__cancel">
+                    <RotateCcw size={18} aria-hidden="true" />
+                    <CancellationForm
+                      busy={busy}
+                      label="Estornar venda"
+                      onSubmit={(reason) => onCancel(order.id, reason)}
+                    />
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
