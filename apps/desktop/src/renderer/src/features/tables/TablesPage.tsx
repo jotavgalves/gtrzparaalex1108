@@ -110,7 +110,15 @@ export function TablesPage(): React.JSX.Element {
           ) : null}
           {loading ? <div className="route-state">Carregando operação…</div> : null}
           {!loading ? (
-            <ServicePointGrid busy={busy} onOpen={openServicePoint} servicePoints={servicePoints} />
+            <ServicePointGrid
+              busy={busy}
+              onDeleteServicePoint={deleteServicePoint}
+              onOpen={openServicePoint}
+              onRenameServicePoint={renameServicePoint}
+              onSetServicePointPinned={setServicePointPinned}
+              production={production}
+              servicePoints={servicePoints}
+            />
           ) : null}
           {!loading ? (
             <RecentOrdersPanel
