@@ -50,8 +50,7 @@ jobs:
 
   publish-windows:
     name: Publicar instalador Windows
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: quality
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 20
     permissions:
