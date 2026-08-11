@@ -1,4 +1,4 @@
-export { createTicketLot, updateTicketLot } from './ticket-lots';
+export { createTicketLot, deleteTicketLot, updateTicketLot } from './ticket-lots';
 export type {
   DatabaseTicketCode,
   DatabaseTicketCodeStatus,

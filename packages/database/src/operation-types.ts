@@ -13,6 +13,7 @@ export interface DatabaseServicePoint {
   readonly eventId: string;
   readonly label: string;
   readonly type: DatabaseServicePointType;
+  readonly pinned: boolean;
   readonly status: DatabaseServicePointStatus;
   readonly activeOrderId: string | null;
   readonly activeOrderTotalCents: number;

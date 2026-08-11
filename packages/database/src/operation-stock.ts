@@ -34,25 +34,48 @@ interface SaleMovementRow {
   readonly quantity: number;
 }
 
+function isComboAvailableInEvent(
+  database: DatabaseContext,
+  eventId: string,
+  comboId: string,
+): boolean {
+  const row = database.sqlite
+    .prepare(
+      `SELECT
+         COUNT(*) AS component_count,
+         COALESCE(SUM(CASE WHEN es.product_id IS NULL THEN 0 ELSE 1 END), 0) AS pulled_count
+       FROM combo_components cc
+       LEFT JOIN event_stock es
+         ON es.product_id = cc.product_id
+        AND es.event_id = ?
+       WHERE cc.combo_id = ?`,
+    )
+    .get(eventId, comboId) as { readonly component_count: number; readonly pulled_count: number };
+
+  return row.component_count > 0 && row.component_count === row.pulled_count;
+}
+
 export function listOperationCatalog(
   database: DatabaseContext,
   eventId: string | null,
 ): readonly DatabaseOperationCatalogItem[] {
-  const products = database.sqlite
-    .prepare(
-      `SELECT
-         p.id,
-         p.name,
-         p.sale_price_cents,
-         p.active,
-         COALESCE(es.quantity, 0) AS available_quantity
-       FROM products p
-       LEFT JOIN event_stock es
-         ON es.product_id = p.id
-        AND es.event_id = ?
-       ORDER BY p.active DESC, p.name COLLATE NOCASE`,
-    )
-    .all(eventId) as ProductCatalogRow[];
+  const products =
+    eventId === null
+      ? []
+      : (database.sqlite
+          .prepare(
+            `SELECT
+               p.id,
+               p.name,
+               p.sale_price_cents,
+               p.active,
+               es.quantity AS available_quantity
+             FROM event_stock es
+             INNER JOIN products p ON p.id = es.product_id
+             WHERE es.event_id = ?
+             ORDER BY p.active DESC, p.name COLLATE NOCASE`,
+          )
+          .all(eventId) as ProductCatalogRow[]);
   const productItems = products.map((product) => {
     const presentation = getProductPresentation(database, product.id);
     return {
@@ -60,22 +83,27 @@ export function listOperationCatalog(
       kind: 'product' as const,
       name: product.name,
       salePriceCents: product.sale_price_cents,
-      availableQuantity: eventId === null ? 0 : product.available_quantity,
+      availableQuantity: product.available_quantity,
       active: product.active === 1,
       imageDataUrl: presentation.imageDataUrl,
       fallbackIcon: presentation.fallbackIcon,
     };
   });
-  const comboItems = listCombos(database).map((combo) => ({
-    id: combo.id,
-    kind: 'combo' as const,
-    name: combo.name,
-    salePriceCents: combo.salePriceCents,
-    availableQuantity: combo.availableUnits,
-    active: combo.active,
-    imageDataUrl: null,
-    fallbackIcon: 'package' as const,
-  }));
+  const comboItems =
+    eventId === null
+      ? []
+      : listCombos(database)
+          .filter((combo) => isComboAvailableInEvent(database, eventId, combo.id))
+          .map((combo) => ({
+            id: combo.id,
+            kind: 'combo' as const,
+            name: combo.name,
+            salePriceCents: combo.salePriceCents,
+            availableQuantity: combo.availableUnits,
+            active: combo.active,
+            imageDataUrl: null,
+            fallbackIcon: 'package' as const,
+          }));
 
   return [...productItems, ...comboItems].sort((left, right) =>
     left.name.localeCompare(right.name, 'pt-BR'),

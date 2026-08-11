@@ -156,12 +156,19 @@
   font-size: 0.7rem;
 }
 
+.ticket-lot-delete,
 .ticket-sale-cancel,
 .ticket-sale-manage {
   display: grid;
   gap: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
+}
+
+.ticket-lot-delete small {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
 }
 
 .ticket-sale-cancel {

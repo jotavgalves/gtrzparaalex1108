@@ -24,6 +24,9 @@ export function TablesPage(): React.JSX.Element {
     message,
     reload,
     createTable,
+    renameServicePoint,
+    setServicePointPinned,
+    deleteServicePoint,
     openServicePoint,
     addItem,
     removeItem,
@@ -132,8 +135,11 @@ export function TablesPage(): React.JSX.Element {
             onBindVoucher={bindVoucher}
             onCancelOrder={cancelOrder}
             onCloseOrder={closeCurrentOrder}
+            onDeleteServicePoint={deleteServicePoint}
             onRemoveItem={removeItem}
+            onRenameServicePoint={renameServicePoint}
             onReprintOrder={reprintOrder}
+            onSetServicePointPinned={setServicePointPinned}
             onUnbindVoucher={unbindVoucher}
             order={order}
             production={production}

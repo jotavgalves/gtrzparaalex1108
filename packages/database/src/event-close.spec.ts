@@ -167,4 +167,22 @@ describe('event close summary', () => {
     );
     database.close();
   });
+
+  it('ignora comanda vazia ao pré-encerrar o evento', async () => {
+    const database = await createTemporaryDatabase();
+    const event = createEvent(database, { name: 'Evento comanda vazia', startsAt: Date.now() });
+    const counter = getOperationState(database).servicePoints[0];
+
+    if (counter === undefined) {
+      throw new Error('Balcão não criado.');
+    }
+
+    openOrder(database, counter.id);
+    expect(previewEventClose(database, event.id)).toMatchObject({
+      openOrdersCount: 0,
+      blockers: [],
+      canClose: true,
+    });
+    database.close();
+  });
 });

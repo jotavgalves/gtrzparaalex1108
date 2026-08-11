@@ -23,6 +23,7 @@ interface ServicePointRow {
   readonly event_id: string;
   readonly label: string;
   readonly type: DatabaseServicePointType;
+  readonly pinned: number;
   readonly active_order_id: string | null;
   readonly active_order_total_cents: number;
   readonly created_at: number;
@@ -87,6 +88,7 @@ function mapServicePoint(row: ServicePointRow): DatabaseServicePoint {
     eventId: row.event_id,
     label: row.label,
     type: row.type,
+    pinned: row.pinned === 1,
     status: row.active_order_id === null ? 'available' : 'open',
     activeOrderId: row.active_order_id,
     activeOrderTotalCents: row.active_order_total_cents,
@@ -266,16 +268,20 @@ export function listServicePoints(
          sp.event_id,
          sp.label,
          sp.type,
+         CASE WHEN pinned.value = '1' THEN 1 ELSE 0 END AS pinned,
          o.id AS active_order_id,
          COALESCE(o.total_cents, 0) AS active_order_total_cents,
          sp.created_at,
          sp.updated_at
        FROM service_points sp
+       LEFT JOIN app_meta pinned
+         ON pinned.key = 'service-point.pinned:' || sp.id
        LEFT JOIN orders o
          ON o.service_point_id = sp.id
         AND o.status = 'open'
        WHERE sp.event_id = ? AND sp.active = 1
        ORDER BY CASE sp.type WHEN 'counter' THEN 0 ELSE 1 END,
+                pinned DESC,
                 sp.label COLLATE NOCASE`,
     )
     .all(eventId) as ServicePointRow[];

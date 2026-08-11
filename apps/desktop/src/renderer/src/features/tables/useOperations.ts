@@ -6,6 +6,7 @@ import type {
   OperationState,
   Order,
   ServicePoint,
+  DeleteServicePointInput,
 } from '@gtrz/contracts';
 
 interface OperationsViewState {
@@ -18,6 +19,9 @@ interface OperationsViewState {
   readonly message: string | null;
   readonly reload: () => Promise<void>;
   readonly createTable: (label: string) => Promise<void>;
+  readonly renameServicePoint: (servicePointId: string, label: string) => Promise<void>;
+  readonly setServicePointPinned: (servicePointId: string, pinned: boolean) => Promise<void>;
+  readonly deleteServicePoint: (input: DeleteServicePointInput) => Promise<void>;
   readonly openServicePoint: (servicePoint: ServicePoint) => Promise<void>;
   readonly addItem: (item: OperationCatalogItem) => Promise<void>;
   readonly removeItem: (orderItemId: string) => Promise<void>;
@@ -98,6 +102,47 @@ export function useOperations(): OperationsViewState {
       );
     },
     [run],
+  );
+
+  const renameServicePoint = useCallback(
+    async (servicePointId: string, label: string): Promise<void> => {
+      const updated = await run(
+        () => window.gtrz.operations.renameServicePoint({ servicePointId, label }),
+        'Mesa renomeada.',
+      );
+      setSelectedServicePoint(updated);
+      if (order?.servicePointId === servicePointId && order.status === 'open') {
+        setOrder({ ...order, servicePointLabel: updated.label });
+      }
+    },
+    [order, run],
+  );
+
+  const setServicePointPinned = useCallback(
+    async (servicePointId: string, pinned: boolean): Promise<void> => {
+      const updated = await run(
+        () => window.gtrz.operations.setServicePointPinned({ servicePointId, pinned }),
+        pinned ? 'Mesa fixada.' : 'Mesa desafixada.',
+      );
+      setSelectedServicePoint(updated);
+    },
+    [run],
+  );
+
+  const deleteServicePoint = useCallback(
+    async (input: DeleteServicePointInput): Promise<void> => {
+      await run(
+        () => window.gtrz.operations.deleteServicePoint(input),
+        input.mode === 'delete-all'
+          ? 'Mesa excluída com estorno das compras e vouchers.'
+          : 'Mesa excluída mantendo vendas concluídas.',
+      );
+      if (selectedServicePoint?.id === input.servicePointId) {
+        setOrder(null);
+        setSelectedServicePoint(null);
+      }
+    },
+    [run, selectedServicePoint?.id],
   );
 
   const openServicePoint = useCallback(
@@ -192,7 +237,6 @@ export function useOperations(): OperationsViewState {
         'Venda concluída e estoque atualizado.',
       );
       setOrder(null);
-      setSelectedServicePoint(null);
     },
     [order, run],
   );
@@ -246,6 +290,9 @@ export function useOperations(): OperationsViewState {
     message,
     reload,
     createTable,
+    renameServicePoint,
+    setServicePointPinned,
+    deleteServicePoint,
     openServicePoint,
     addItem,
     removeItem,

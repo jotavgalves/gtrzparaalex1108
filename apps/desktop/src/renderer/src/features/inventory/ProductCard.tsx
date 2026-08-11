@@ -222,6 +222,7 @@ export function ProductCard({
           {product.lowStock ? <TriangleAlert size={14} aria-hidden="true" /> : null}
           {product.quantity} un.
         </span>
+        <span className="stock-badge stock-badge--sold">Vendido {product.soldQuantity} un.</span>
       </div>
 
       <div className="inventory-card__prices inventory-card__prices--compact">
@@ -242,6 +243,14 @@ export function ProductCard({
             <div>
               <span>Aporte líquido</span>
               <strong>{formatMoney(product.financials.contributedCostCents)}</strong>
+            </div>
+            <div>
+              <span>Receita se vender saldo</span>
+              <strong>{formatMoney(product.financials.potentialGrossRevenueCents)}</strong>
+            </div>
+            <div>
+              <span>Lucro se vender saldo</span>
+              <strong>{formatMoney(product.financials.potentialGrossProfitCents)}</strong>
             </div>
           </>
         )}

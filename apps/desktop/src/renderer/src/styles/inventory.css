@@ -151,7 +151,7 @@
 .product-visual img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .inventory-toolbar {
   display: grid;
@@ -207,7 +207,7 @@
 }
 .inventory-card__topline {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-3);
 }
@@ -252,13 +252,17 @@
   background: var(--color-warning-soft);
   color: var(--color-warning);
 }
+.stock-badge--sold {
+  background: rgb(148 163 184 / 12%);
+  color: var(--color-text-muted);
+}
 .inventory-card__prices {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 .inventory-card__prices--compact {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
 }
 .inventory-card__prices > div {
   display: flex;
@@ -407,6 +411,13 @@
   .product-delete-options {
     align-items: stretch;
     flex-direction: column;
+  }
+  .inventory-card__topline {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .inventory-card__topline .stock-badge {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
   .inventory-card__actions {
     width: 100%;

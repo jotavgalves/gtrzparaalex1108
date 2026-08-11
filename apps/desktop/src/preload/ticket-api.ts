@@ -4,8 +4,10 @@ import {
   cancelTicketSaleInputSchema,
   createTicketLotInputSchema,
   createTicketSaleInputSchema,
+  deleteTicketLotInputSchema,
   deleteTicketSaleInputSchema,
   IPC_CHANNELS,
+  ticketLotDeletionResultSchema,
   ticketLotSchema,
   ticketSaleDeletionResultSchema,
   ticketSaleSchema,
@@ -14,9 +16,11 @@ import {
   type CancelTicketSaleInput,
   type CreateTicketLotInput,
   type CreateTicketSaleInput,
+  type DeleteTicketLotInput,
   type DeleteTicketSaleInput,
   type TicketApi,
   type TicketLot,
+  type TicketLotDeletionResult,
   type TicketSale,
   type TicketSaleDeletionResult,
   type TicketState,
@@ -39,6 +43,12 @@ export const ticketApi: TicketApi = {
     const parsedInput = updateTicketLotInputSchema.parse(input);
     const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.ticketsUpdateLot, parsedInput);
     return ticketLotSchema.parse(payload);
+  },
+
+  async deleteLot(input: DeleteTicketLotInput): Promise<TicketLotDeletionResult> {
+    const parsedInput = deleteTicketLotInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.ticketsDeleteLot, parsedInput);
+    return ticketLotDeletionResultSchema.parse(payload);
   },
 
   async createSale(input: CreateTicketSaleInput): Promise<TicketSale> {

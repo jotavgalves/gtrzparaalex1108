@@ -418,7 +418,13 @@ export function closeCashRegister(
   }
 
   const openOrders = database.sqlite
-    .prepare("SELECT COUNT(*) AS value FROM orders WHERE event_id = ? AND status = 'open'")
+    .prepare(
+      `SELECT COUNT(*) AS value
+       FROM orders
+       WHERE event_id = ?
+         AND status = 'open'
+         AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = orders.id)`,
+    )
     .get(eventId) as { readonly value: number };
 
   if (openOrders.value > 0) {

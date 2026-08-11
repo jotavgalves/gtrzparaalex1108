@@ -6,13 +6,17 @@ import {
   cancelOrderInputSchema,
   closeOrderInputSchema,
   createServicePointInputSchema,
+  deleteServicePointInputSchema,
   getOrderInputSchema,
   IPC_CHANNELS,
   openOrderInputSchema,
   operationStateSchema,
   orderSchema,
   removeOrderItemInputSchema,
+  renameServicePointInputSchema,
   servicePointSchema,
+  servicePointDeletionResultSchema,
+  setServicePointPinnedInputSchema,
   startOrderWithItemInputSchema,
   unbindOrderVoucherInputSchema,
   type AddOrderItemInput,
@@ -20,12 +24,16 @@ import {
   type CancelOrderInput,
   type CloseOrderInput,
   type CreateServicePointInput,
+  type DeleteServicePointInput,
   type OpenOrderInput,
   type OperationState,
   type OperationsApi,
   type Order,
+  type RenameServicePointInput,
   type RemoveOrderItemInput,
   type ServicePoint,
+  type ServicePointDeletionResult,
+  type SetServicePointPinnedInput,
   type StartOrderWithItemInput,
   type UnbindOrderVoucherInput,
 } from '@gtrz/contracts';
@@ -43,6 +51,33 @@ export const operationsApi: OperationsApi = {
       parsedInput,
     );
     return servicePointSchema.parse(payload);
+  },
+
+  async renameServicePoint(input: RenameServicePointInput): Promise<ServicePoint> {
+    const parsedInput = renameServicePointInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.operationsRenameServicePoint,
+      parsedInput,
+    );
+    return servicePointSchema.parse(payload);
+  },
+
+  async setServicePointPinned(input: SetServicePointPinnedInput): Promise<ServicePoint> {
+    const parsedInput = setServicePointPinnedInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.operationsSetServicePointPinned,
+      parsedInput,
+    );
+    return servicePointSchema.parse(payload);
+  },
+
+  async deleteServicePoint(input: DeleteServicePointInput): Promise<ServicePointDeletionResult> {
+    const parsedInput = deleteServicePointInputSchema.parse(input);
+    const payload: unknown = await ipcRenderer.invoke(
+      IPC_CHANNELS.operationsDeleteServicePoint,
+      parsedInput,
+    );
+    return servicePointDeletionResultSchema.parse(payload);
   },
 
   async openOrder(input: OpenOrderInput): Promise<Order> {

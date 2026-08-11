@@ -65,6 +65,14 @@ export function InventoryPage(): React.JSX.Element {
     (total, product) => total + (product.financials?.contributedCostCents ?? 0),
     0,
   );
+  const potentialGrossProfitCents = products.reduce(
+    (total, product) => total + (product.financials?.potentialGrossProfitCents ?? 0),
+    0,
+  );
+  const potentialGrossRevenueCents = products.reduce(
+    (total, product) => total + (product.financials?.potentialGrossRevenueCents ?? 0),
+    0,
+  );
 
   return (
     <section className="feature-page">
@@ -111,6 +119,13 @@ export function InventoryPage(): React.JSX.Element {
             <small>Aporte líquido calculado: {formatMoney(contributedCostCents)}</small>
           ) : null}
         </article>
+        {production ? (
+          <article className="summary-card summary-card--accent">
+            <span>Lucro se vender tudo</span>
+            <strong>{formatMoney(potentialGrossProfitCents)}</strong>
+            <small>Receita possível: {formatMoney(potentialGrossRevenueCents)}</small>
+          </article>
+        ) : null}
       </div>
 
       {!hasActiveEvent ? (

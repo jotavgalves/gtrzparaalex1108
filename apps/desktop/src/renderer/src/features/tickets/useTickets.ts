@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type {
   CreateTicketLotInput,
   CreateTicketSaleInput,
+  DeleteTicketLotInput,
   TicketState,
   UpdateTicketLotInput,
 } from '@gtrz/contracts';
@@ -16,6 +17,7 @@ interface TicketViewState {
   readonly reload: () => Promise<void>;
   readonly createLot: (input: CreateTicketLotInput) => Promise<void>;
   readonly updateLot: (input: UpdateTicketLotInput) => Promise<void>;
+  readonly deleteLot: (input: DeleteTicketLotInput) => Promise<void>;
   readonly createSale: (input: CreateTicketSaleInput) => Promise<void>;
   readonly cancelSale: (saleId: string, reason: string) => Promise<void>;
   readonly deleteSale: (saleId: string, reason: string) => Promise<void>;
@@ -82,6 +84,16 @@ export function useTickets(): TicketViewState {
     [run],
   );
 
+  const deleteLot = useCallback(
+    async (input: DeleteTicketLotInput): Promise<void> => {
+      await run(
+        () => window.gtrz.tickets.deleteLot(input),
+        'Lote, vendas e códigos excluídos definitivamente.',
+      );
+    },
+    [run],
+  );
+
   const createSale = useCallback(
     async (input: CreateTicketSaleInput): Promise<void> => {
       await run(() => window.gtrz.tickets.createSale(input), 'Ingressos registrados.');
@@ -115,6 +127,7 @@ export function useTickets(): TicketViewState {
     reload,
     createLot,
     updateLot,
+    deleteLot,
     createSale,
     cancelSale,
     deleteSale,

@@ -5,10 +5,14 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  addOrderItem,
+  closeOrder,
   createEvent,
   createInventoryProduct,
   createProductCategory,
+  createServicePoint,
   getInventoryState,
+  openOrder,
   openDatabase,
   recordStockMovement,
   setActiveEvent,
@@ -62,6 +66,43 @@ describe('inventory database', () => {
         costCents: 600,
         grossProfitCents: 400,
         marginPercent: 40,
+        potentialGrossProfitCents: 0,
+        potentialGrossRevenueCents: 0,
+      },
+    });
+    database.close();
+  });
+
+  it('mostra potencial de lucro do saldo atual e vendido sem contar baixas excepcionais', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento venda por produto', startsAt: Date.now() });
+    const { productId } = createCatalog(database);
+    recordStockMovement(database, { productId, type: 'purchase', quantity: 10 });
+    recordStockMovement(database, { productId, type: 'loss', quantity: 2 });
+    recordStockMovement(database, { productId, type: 'courtesy', quantity: 1 });
+    recordStockMovement(database, { productId, type: 'correction-negative', quantity: 1 });
+    const table = createServicePoint(database, { label: 'Mesa venda', type: 'table' });
+    const order = addOrderItem(database, {
+      orderId: openOrder(database, table.id).id,
+      itemKind: 'product',
+      itemId: productId,
+      quantity: 3,
+    });
+    closeOrder(database, {
+      orderId: order.id,
+      discountCents: 0,
+      payments: [{ method: 'pix', amountCents: 3_000 }],
+    });
+
+    const product = getInventoryState(database).products.find((item) => item.id === productId);
+
+    expect(product).toMatchObject({
+      quantity: 3,
+      soldQuantity: 3,
+      financials: {
+        currentStockValueCents: 1_800,
+        potentialGrossProfitCents: 1_200,
+        potentialGrossRevenueCents: 3_000,
       },
     });
     database.close();

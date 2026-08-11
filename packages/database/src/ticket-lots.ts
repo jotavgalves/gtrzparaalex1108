@@ -94,3 +94,72 @@ export function updateTicketLot(
 
   return requireTicketLot(database, eventId, input.lotId);
 }
+
+export function deleteTicketLot(
+  database: DatabaseContext,
+  input: { readonly lotId: string; readonly reason: string },
+): {
+  readonly lotId: string;
+  readonly deleted: true;
+  readonly removedSalesCount: number;
+  readonly removedCodesCount: number;
+} {
+  requireTicketProduction(database);
+  const eventId = requireTicketEvent(database);
+  const lot = requireTicketLot(database, eventId, input.lotId);
+  const reason = input.reason.trim();
+
+  if (reason.length < 3) {
+    throw new Error('Informe o motivo da exclusão do lote.');
+  }
+
+  const saleRows = database.sqlite
+    .prepare('SELECT id FROM ticket_sales WHERE event_id = ? AND lot_id = ?')
+    .all(eventId, lot.id) as { readonly id: string }[];
+  const saleIds = saleRows.map((row) => row.id);
+  const removedCodesCount =
+    saleIds.length === 0
+      ? 0
+      : (
+          database.sqlite
+            .prepare(
+              `SELECT COUNT(*) AS value
+               FROM ticket_codes
+               WHERE sale_id IN (${saleIds.map(() => '?').join(', ')})`,
+            )
+            .get(...saleIds) as { readonly value: number }
+        ).value;
+
+  database.sqlite.transaction(() => {
+    appendAudit(database, {
+      action: 'ticket.lot-deleted',
+      entityType: 'ticket-lot',
+      entityId: lot.id,
+      eventId,
+      details: {
+        lot,
+        reason,
+        removedCodesCount,
+        removedSalesCount: saleIds.length,
+      },
+    });
+
+    if (saleIds.length > 0) {
+      database.sqlite
+        .prepare(`DELETE FROM ticket_codes WHERE sale_id IN (${saleIds.map(() => '?').join(', ')})`)
+        .run(...saleIds);
+      database.sqlite
+        .prepare(`DELETE FROM ticket_sales WHERE id IN (${saleIds.map(() => '?').join(', ')})`)
+        .run(...saleIds);
+    }
+
+    database.sqlite.prepare('DELETE FROM ticket_lots WHERE id = ?').run(lot.id);
+  })();
+
+  return {
+    lotId: lot.id,
+    deleted: true,
+    removedSalesCount: saleIds.length,
+    removedCodesCount,
+  };
+}

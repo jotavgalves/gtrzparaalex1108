@@ -13,11 +13,15 @@ import {
   createInventoryProduct,
   createProductCategory,
   createServicePoint,
+  deleteServicePoint,
   getOperationState,
   getOrder,
   openDatabase,
   openOrder,
   recordStockMovement,
+  renameServicePoint,
+  setActiveEvent,
+  setServicePointPinned,
   switchProfile,
   type DatabaseContext,
 } from './index';
@@ -316,6 +320,123 @@ describe('event operations database', () => {
     expect(() => cancelOrder(database, { orderId: order.id, reason: 'Tentativa Caixa' })).toThrow(
       'O cancelamento de comandas exige o perfil Produção.',
     );
+    database.close();
+  });
+
+  it('renomeia e fixa mesa ativa na grade operacional', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento mesa fixa', startsAt: Date.now() });
+    const mesaA = createServicePoint(database, { label: 'Mesa A', type: 'table' });
+    const mesaB = createServicePoint(database, { label: 'Mesa B', type: 'table' });
+
+    expect(renameServicePoint(database, { servicePointId: mesaB.id, label: 'Mesa VIP' })).toMatchObject({
+      id: mesaB.id,
+      label: 'Mesa VIP',
+    });
+    expect(setServicePointPinned(database, { servicePointId: mesaB.id, pinned: true })).toMatchObject({
+      id: mesaB.id,
+      pinned: true,
+    });
+
+    const tables = getOperationState(database).servicePoints.filter((point) => point.type === 'table');
+    expect(tables.map((point) => point.id)).toEqual([mesaB.id, mesaA.id]);
+    database.close();
+  });
+
+  it('não herda catálogo operacional de outro evento sem estoque puxado', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento origem estoque', startsAt: Date.now() });
+    const catalog = seedCatalog(database);
+
+    expect(new Set(getOperationState(database).catalog.map((item) => item.name))).toEqual(
+      new Set(['Água', 'Água com gelo', 'Gelo']),
+    );
+
+    const emptyEvent = createEvent(database, { name: 'Evento novo vazio', startsAt: Date.now() });
+    setActiveEvent(database, emptyEvent.id);
+    expect(getOperationState(database).catalog).toHaveLength(0);
+
+    recordStockMovement(database, { productId: catalog.waterId, type: 'purchase', quantity: 1 });
+    expect(getOperationState(database).catalog.map((item) => item.name)).toEqual(['Água']);
+    database.close();
+  });
+
+  it('exclui mesa mantendo vendas pagas e removendo comandas abertas', async () => {
+    const database = await createTemporaryDatabase();
+    const event = createEvent(database, { name: 'Evento manter vendas', startsAt: Date.now() });
+    const catalog = seedCatalog(database);
+    const table = createServicePoint(database, { label: 'Mesa histórico', type: 'table' });
+    let paidOrder = openOrder(database, table.id);
+    paidOrder = addOrderItem(database, {
+      orderId: paidOrder.id,
+      itemKind: 'product',
+      itemId: catalog.waterId,
+      quantity: 1,
+    });
+    paidOrder = closeOrder(database, {
+      orderId: paidOrder.id,
+      discountCents: 0,
+      payments: [{ method: 'pix', amountCents: 500 }],
+    });
+    let openTableOrder = openOrder(database, table.id);
+    openTableOrder = addOrderItem(database, {
+      orderId: openTableOrder.id,
+      itemKind: 'product',
+      itemId: catalog.waterId,
+      quantity: 1,
+    });
+
+    expect(
+      deleteServicePoint(database, {
+        servicePointId: table.id,
+        mode: 'keep-sales-history',
+        reason: 'Mesa duplicada',
+      }),
+    ).toMatchObject({
+      cancelledOrdersCount: 1,
+      preservedOrdersCount: 1,
+    });
+
+    expect(getOperationState(database).servicePoints.some((point) => point.id === table.id)).toBe(
+      false,
+    );
+    expect(getOrder(database, paidOrder.id).status).toBe('paid');
+    expect(getOrder(database, openTableOrder.id).status).toBe('cancelled');
+    expect(getStock(database, event.id, catalog.waterId)).toBe(9);
+    database.close();
+  });
+
+  it('exclui mesa estornando vendas pagas para o estoque', async () => {
+    const database = await createTemporaryDatabase();
+    const event = createEvent(database, { name: 'Evento excluir tudo', startsAt: Date.now() });
+    const catalog = seedCatalog(database);
+    const table = createServicePoint(database, { label: 'Mesa estorno', type: 'table' });
+    let order = openOrder(database, table.id);
+    order = addOrderItem(database, {
+      orderId: order.id,
+      itemKind: 'product',
+      itemId: catalog.waterId,
+      quantity: 2,
+    });
+    order = closeOrder(database, {
+      orderId: order.id,
+      discountCents: 0,
+      payments: [{ method: 'cash', amountCents: 1000, receivedCents: 1000 }],
+    });
+
+    expect(getStock(database, event.id, catalog.waterId)).toBe(8);
+    expect(
+      deleteServicePoint(database, {
+        servicePointId: table.id,
+        mode: 'delete-all',
+        reason: 'Excluir toda operação da mesa',
+      }),
+    ).toMatchObject({
+      cancelledOrdersCount: 1,
+      preservedOrdersCount: 0,
+    });
+    expect(getOrder(database, order.id).status).toBe('cancelled');
+    expect(getStock(database, event.id, catalog.waterId)).toBe(10);
     database.close();
   });
 });

@@ -56,6 +56,7 @@ describe('inventory contracts', () => {
         lowStockThreshold: 3,
         active: true,
         quantity: 7,
+        soldQuantity: 0,
         lowStock: false,
         financials: null,
         imageDataUrl: null,

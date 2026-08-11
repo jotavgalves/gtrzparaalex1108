@@ -87,8 +87,19 @@
 }
 
 .service-point-card .status-badge {
-  grid-column: 1 / -1;
+  grid-column: 1 / 2;
   justify-self: start;
+}
+
+.service-point-card__pin {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  justify-self: end;
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-brand-hover);
 }
 
 .operation-workspace {
@@ -203,6 +214,37 @@
 
 .order-panel__empty-order {
   padding-block: var(--space-6);
+}
+
+.service-point-admin {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-raised);
+}
+
+.service-point-admin__actions,
+.service-point-admin__delete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.service-point-admin__rename,
+.service-point-admin__delete {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.service-point-admin__delete-actions {
+  align-items: end;
+  justify-content: flex-end;
 }
 
 .order-items,
@@ -525,6 +567,8 @@
 
 @media (max-width: 720px) {
   .create-table-form,
+  .service-point-admin__delete,
+  .service-point-admin__rename,
   .operation-catalog__filters,
   .payment-row,
   .service-point-grid,

@@ -38,6 +38,8 @@ export const productFinancialsSchema = z.object({
   marginPercent: z.number(),
   currentStockValueCents: z.number().int().nonnegative(),
   contributedCostCents: z.number().int().nonnegative(),
+  potentialGrossRevenueCents: z.number().int().nonnegative(),
+  potentialGrossProfitCents: z.number().int(),
 });
 
 export const inventoryProductSchema = z.object({
@@ -50,6 +52,7 @@ export const inventoryProductSchema = z.object({
   lowStockThreshold: z.number().int().nonnegative(),
   active: z.boolean(),
   quantity: z.number().int().nonnegative(),
+  soldQuantity: z.number().int().nonnegative(),
   lowStock: z.boolean(),
   imageDataUrl: productImageDataUrlSchema,
   fallbackIcon: productFallbackIconSchema,

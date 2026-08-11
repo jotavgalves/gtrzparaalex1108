@@ -1,12 +1,13 @@
-import { Pencil, Save, Ticket } from 'lucide-react';
+import { Pencil, Save, Ticket, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
-import type { TicketLot, UpdateTicketLotInput } from '@gtrz/contracts';
+import type { DeleteTicketLotInput, TicketLot, UpdateTicketLotInput } from '@gtrz/contracts';
 
 interface TicketLotCardProps {
   readonly lot: TicketLot;
   readonly busy: boolean;
   readonly onUpdate: (input: UpdateTicketLotInput) => Promise<void>;
+  readonly onDelete: (input: DeleteTicketLotInput) => Promise<void>;
 }
 
 function formatMoney(cents: number): string {
@@ -21,11 +22,18 @@ function parseMoney(value: string): number {
   return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
 }
 
-export function TicketLotCard({ lot, busy, onUpdate }: TicketLotCardProps): React.JSX.Element {
+export function TicketLotCard({
+  lot,
+  busy,
+  onUpdate,
+  onDelete,
+}: TicketLotCardProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [name, setName] = useState(lot.name);
   const [price, setPrice] = useState(String(lot.priceCents / 100));
   const [capacity, setCapacity] = useState(String(lot.capacity));
+  const [deleteReason, setDeleteReason] = useState('');
   const consumed = lot.soldQuantity + lot.courtesyQuantity;
 
   return (
@@ -149,8 +157,54 @@ export function TicketLotCard({ lot, busy, onUpdate }: TicketLotCardProps): Reac
           >
             {lot.active ? 'Desativar' : 'Ativar'}
           </button>
+          <button
+            className="button button--danger button--compact"
+            disabled={busy}
+            onClick={() => {
+              setDeleting((current) => !current);
+            }}
+            type="button"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            Excluir
+          </button>
         </div>
       )}
+      {deleting ? (
+        <form
+          className="ticket-lot-delete"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onDelete({ lotId: lot.id, reason: deleteReason }).then(() => {
+              setDeleting(false);
+              setDeleteReason('');
+            });
+          }}
+        >
+          <label className="form-field">
+            <span>Motivo da exclusão definitiva</span>
+            <input
+              disabled={busy}
+              onChange={(event) => {
+                setDeleteReason(event.target.value);
+              }}
+              placeholder="Ex.: lote criado por engano"
+              value={deleteReason}
+            />
+          </label>
+          <small>
+            Remove o lote, todas as vendas/cortesias vinculadas e os códigos gerados.
+          </small>
+          <button
+            className="button button--danger button--compact"
+            disabled={busy || deleteReason.trim().length < 3}
+            type="submit"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            Excluir definitivamente
+          </button>
+        </form>
+      ) : null}
     </article>
   );
 }

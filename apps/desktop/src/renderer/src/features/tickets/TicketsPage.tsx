@@ -23,6 +23,7 @@ export function TicketsPage(): React.JSX.Element {
     reload,
     createLot,
     updateLot,
+    deleteLot,
     createSale,
     cancelSale,
     deleteSale,
@@ -106,7 +107,13 @@ export function TicketsPage(): React.JSX.Element {
 
           <div className="ticket-lot-list">
             {lots.map((lot) => (
-              <TicketLotCard busy={busy} key={lot.id} lot={lot} onUpdate={updateLot} />
+              <TicketLotCard
+                busy={busy}
+                key={lot.id}
+                lot={lot}
+                onDelete={deleteLot}
+                onUpdate={updateLot}
+              />
             ))}
           </div>
 

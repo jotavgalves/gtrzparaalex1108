@@ -1,4 +1,4 @@
-import { Armchair, ShoppingBasket } from 'lucide-react';
+import { Armchair, Pin, ShoppingBasket } from 'lucide-react';
 
 import type { ServicePoint } from '@gtrz/contracts';
 
@@ -48,6 +48,11 @@ export function ServicePointGrid({
             <span className={open ? 'status-badge status-badge--open' : 'status-badge'}>
               {open ? formatMoney(servicePoint.activeOrderTotalCents) : 'Livre'}
             </span>
+            {servicePoint.pinned ? (
+              <span className="service-point-card__pin" title="Mesa fixada">
+                <Pin size={14} aria-hidden="true" />
+              </span>
+            ) : null}
           </button>
         );
       })}

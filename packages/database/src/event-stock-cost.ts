@@ -21,10 +21,6 @@ export function getEventStockCostCents(database: DatabaseContext, eventId: strin
              CASE sm.type
                WHEN 'sale' THEN sm.quantity
                WHEN 'return' THEN -sm.quantity
-               WHEN 'loss' THEN sm.quantity
-               WHEN 'breakage' THEN sm.quantity
-               WHEN 'internal-consumption' THEN sm.quantity
-               WHEN 'courtesy' THEN sm.quantity
                ELSE 0
              END
            )

@@ -81,7 +81,10 @@ function getOrderSummary(database: DatabaseContext, eventId: string): OrderSumma
   return database.sqlite
     .prepare(
       `SELECT
-         COALESCE(SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END), 0) AS open_count,
+         COALESCE(SUM(CASE
+           WHEN status = 'open'
+            AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = orders.id)
+           THEN 1 ELSE 0 END), 0) AS open_count,
          COALESCE(SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END), 0) AS paid_count,
          COALESCE(SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END), 0)
            AS cancelled_count

@@ -9,6 +9,7 @@ import {
   createEvent,
   createTicketLot,
   createTicketSale,
+  deleteTicketLot,
   deleteTicketSale,
   getCashState,
   getTicketState,
@@ -32,6 +33,40 @@ afterEach(async () => {
 });
 
 describe('ticket sale deletion', () => {
+  it('exclui definitivamente um lote com vendas e códigos vinculados', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento exclusão lote', startsAt: Date.now() });
+    const lot = createTicketLot(database, {
+      name: 'Lote removível',
+      priceCents: 4000,
+      capacity: 3,
+    });
+    createTicketSale(database, {
+      lotId: lot.id,
+      attendeeName: 'Venda do lote',
+      source: 'door',
+      quantity: 2,
+      paymentMethod: 'pix',
+      manualCodes: ['LOT-001', 'LOT-002'],
+    });
+
+    expect(deleteTicketLot(database, { lotId: lot.id, reason: 'Lote criado errado' })).toEqual({
+      lotId: lot.id,
+      deleted: true,
+      removedCodesCount: 2,
+      removedSalesCount: 1,
+    });
+
+    const state = getTicketState(database);
+    expect(state.lots).toHaveLength(0);
+    expect(state.sales).toHaveLength(0);
+    expect(state.activeRevenueCents).toBe(0);
+    expect(database.sqlite.prepare('SELECT COUNT(*) AS value FROM ticket_codes').get()).toEqual({
+      value: 0,
+    });
+    database.close();
+  });
+
   it('cancela uma venda ativa antes de excluir e devolve capacidade e receita', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento exclusão ingresso', startsAt: Date.now() });

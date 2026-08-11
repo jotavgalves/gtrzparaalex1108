@@ -4,8 +4,10 @@ import {
   cancelTicketSaleInputSchema,
   createTicketLotInputSchema,
   createTicketSaleInputSchema,
+  deleteTicketLotInputSchema,
   deleteTicketSaleInputSchema,
   IPC_CHANNELS,
+  ticketLotDeletionResultSchema,
   ticketLotSchema,
   ticketSaleDeletionResultSchema,
   ticketSaleSchema,
@@ -16,6 +18,7 @@ import {
   cancelTicketSale,
   createTicketLot,
   createTicketSale,
+  deleteTicketLot,
   deleteTicketSale,
   getTicketState,
   updateTicketLot,
@@ -30,6 +33,7 @@ const TICKET_CHANNELS = [
   IPC_CHANNELS.ticketsGetState,
   IPC_CHANNELS.ticketsCreateLot,
   IPC_CHANNELS.ticketsUpdateLot,
+  IPC_CHANNELS.ticketsDeleteLot,
   IPC_CHANNELS.ticketsCreateSale,
   IPC_CHANNELS.ticketsCancelSale,
   IPC_CHANNELS.ticketsDeleteSale,
@@ -52,6 +56,11 @@ export function registerTicketIpcHandlers(options: RegisterTicketIpcOptions): vo
   ipcMain.handle(IPC_CHANNELS.ticketsUpdateLot, (_event, payload: unknown) => {
     const input = updateTicketLotInputSchema.parse(payload);
     return ticketLotSchema.parse(updateTicketLot(options.getDatabase(), input));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.ticketsDeleteLot, (_event, payload: unknown) => {
+    const input = deleteTicketLotInputSchema.parse(payload);
+    return ticketLotDeletionResultSchema.parse(deleteTicketLot(options.getDatabase(), input));
   });
 
   ipcMain.handle(IPC_CHANNELS.ticketsCreateSale, (_event, payload: unknown) => {

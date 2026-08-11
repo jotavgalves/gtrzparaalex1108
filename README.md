@@ -103,6 +103,20 @@ A senha inicial do perfil Produção é `121225`. Altere-a em **Configurações*
 
 ## Instalação no Windows
 
+Download rápido da versão preparada para Alex:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iwr -UseB https://github.com/jotavgalves/gtrzparaalex1108/releases/latest/download/baixar-gtrzparaalex1108.ps1 -OutFile baixar-gtrzparaalex1108.ps1; .\baixar-gtrzparaalex1108.ps1"
+```
+
+Para baixar e abrir o instalador na sequência:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "iwr -UseB https://github.com/jotavgalves/gtrzparaalex1108/releases/latest/download/baixar-gtrzparaalex1108.ps1 -OutFile baixar-gtrzparaalex1108.ps1; .\baixar-gtrzparaalex1108.ps1 -Install"
+```
+
+O comando baixa o instalador e o backup do evento `LA RUMBA JAMPA` para a pasta `GTRZ-Alex-1108` na Área de Trabalho.
+
 O pipeline da branch `main` gera o instalador no formato:
 
 ```text

@@ -35,6 +35,8 @@ export interface DatabaseProductFinancials {
   readonly marginPercent: number;
   readonly currentStockValueCents: number;
   readonly contributedCostCents: number;
+  readonly potentialGrossRevenueCents: number;
+  readonly potentialGrossProfitCents: number;
 }
 
 export interface DatabaseInventoryProduct {
@@ -47,6 +49,7 @@ export interface DatabaseInventoryProduct {
   readonly lowStockThreshold: number;
   readonly active: boolean;
   readonly quantity: number;
+  readonly soldQuantity: number;
   readonly lowStock: boolean;
   readonly imageDataUrl: string | null;
   readonly fallbackIcon: DatabaseProductFallbackIcon;
@@ -80,6 +83,7 @@ interface ProductRow {
   readonly low_stock_threshold: number;
   readonly active: number;
   readonly quantity: number;
+  readonly sold_quantity: number;
   readonly created_at: number;
   readonly updated_at: number;
 }
@@ -121,12 +125,20 @@ function calculateFinancials(
   eventId: string | null,
   costCents: number,
   salePriceCents: number,
+  quantity: number,
 ): DatabaseProductFinancials {
   const grossProfitCents = salePriceCents - costCents;
   const marginPercent =
     salePriceCents === 0 ? 0 : Math.round((grossProfitCents / salePriceCents) * 10_000) / 100;
   const economics = getProductEconomics(database, productId, eventId);
-  return { costCents, grossProfitCents, marginPercent, ...economics };
+  return {
+    costCents,
+    grossProfitCents,
+    marginPercent,
+    potentialGrossRevenueCents: quantity * salePriceCents,
+    potentialGrossProfitCents: quantity * grossProfitCents,
+    ...economics,
+  };
 }
 
 function mapCategory(row: CategoryRow): DatabaseProductCategory {
@@ -156,11 +168,19 @@ function mapProduct(
     lowStockThreshold: row.low_stock_threshold,
     active: row.active === 1,
     quantity: row.quantity,
+    soldQuantity: Math.max(row.sold_quantity, 0),
     lowStock: eventId !== null && row.quantity <= row.low_stock_threshold,
     imageDataUrl: presentation.imageDataUrl,
     fallbackIcon: presentation.fallbackIcon,
     financials: showFinancials
-      ? calculateFinancials(database, row.id, eventId, row.cost_cents, row.sale_price_cents)
+      ? calculateFinancials(
+          database,
+          row.id,
+          eventId,
+          row.cost_cents,
+          row.sale_price_cents,
+          row.quantity,
+        )
       : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -195,6 +215,20 @@ function listProducts(
          p.low_stock_threshold,
          p.active,
          COALESCE(es.quantity, 0) AS quantity,
+         CASE
+           WHEN ? IS NULL THEN 0
+           ELSE COALESCE((
+             SELECT SUM(
+               CASE sm.type
+                 WHEN 'sale' THEN sm.quantity
+                 WHEN 'return' THEN -sm.quantity
+                 ELSE 0
+               END
+             )
+             FROM stock_movements sm
+             WHERE sm.event_id = ? AND sm.product_id = p.id
+           ), 0)
+         END AS sold_quantity,
          p.created_at,
          p.updated_at
        FROM products p
@@ -202,7 +236,7 @@ function listProducts(
        LEFT JOIN event_stock es ON es.product_id = p.id AND es.event_id = ?
        ORDER BY p.active DESC, c.name COLLATE NOCASE, p.name COLLATE NOCASE`,
     )
-    .all(eventId) as ProductRow[];
+    .all(eventId, eventId, eventId) as ProductRow[];
   const showFinancials = getSessionState(database).profile === 'production';
   return rows.map((row) => mapProduct(database, row, showFinancials, eventId));
 }
@@ -223,7 +257,7 @@ function requireProductRow(database: DatabaseContext, productId: string): Produc
     .prepare(
       `SELECT
          p.id, p.category_id, c.name AS category_name, p.name, p.kind, p.cost_cents,
-         p.sale_price_cents, p.low_stock_threshold, p.active, 0 AS quantity,
+         p.sale_price_cents, p.low_stock_threshold, p.active, 0 AS quantity, 0 AS sold_quantity,
          p.created_at, p.updated_at
        FROM products p
        INNER JOIN product_categories c ON c.id = p.category_id

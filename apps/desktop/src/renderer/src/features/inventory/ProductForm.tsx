@@ -1,5 +1,5 @@
 import { ImagePlus, PackagePlus, Save, X } from 'lucide-react';
-import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 
 import type {
   CreateProductInput,
@@ -43,18 +43,70 @@ function inputToCents(value: string): number {
   return Math.round(amount * 100);
 }
 
-function readImage(event: ChangeEvent<HTMLInputElement>, onReady: (dataUrl: string) => void): void {
-  const file = event.target.files?.[0];
-  if (file === undefined) return;
+const MAX_IMAGE_DATA_URL_LENGTH = 730_000;
+const MAX_IMAGE_DIMENSION = 1280;
+
+function loadImage(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => {
+      resolve(image);
+    });
+    image.addEventListener('error', () => {
+      reject(new Error('Não foi possível ler a foto escolhida.'));
+    });
+    image.src = dataUrl;
+  });
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error('Não foi possível ler a foto escolhida.'));
+    });
+    reader.addEventListener('error', () => {
+      reject(new Error('Não foi possível ler a foto escolhida.'));
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
+async function optimizeImage(file: File): Promise<string> {
   if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
     throw new Error('Escolha uma foto PNG, JPG ou WebP.');
   }
-  if (file.size > 550_000) throw new Error('A foto deve ter no máximo 550 KB.');
-  const reader = new FileReader();
-  reader.addEventListener('load', () => {
-    if (typeof reader.result === 'string') onReady(reader.result);
-  });
-  reader.readAsDataURL(file);
+  const originalDataUrl = await readFileAsDataUrl(file);
+  const image = await loadImage(originalDataUrl);
+  const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+
+  if (context === null) {
+    throw new Error('Não foi possível preparar a foto para salvar.');
+  }
+
+  context.fillStyle = '#111114';
+  context.fillRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  for (const quality of [0.86, 0.78, 0.7, 0.62, 0.54]) {
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    if (dataUrl.length <= MAX_IMAGE_DATA_URL_LENGTH) {
+      return dataUrl;
+    }
+  }
+
+  throw new Error('A foto é muito grande para o banco mesmo após otimização.');
 }
 
 export function ProductForm(props: ProductFormProps): React.JSX.Element {
@@ -227,7 +279,7 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
         />
         <div>
           <strong>Foto do produto</strong>
-          <small>PNG, JPG ou WebP, até 550 KB. Sem foto, aparece o ícone escolhido.</small>
+          <small>PNG, JPG ou WebP. O sistema ajusta fotos grandes automaticamente.</small>
           <div className="product-media-editor__actions">
             <label className="button button--secondary button--compact">
               <ImagePlus size={15} aria-hidden="true" /> Escolher foto
@@ -235,12 +287,22 @@ export function ProductForm(props: ProductFormProps): React.JSX.Element {
                 accept="image/png,image/jpeg,image/webp"
                 className="visually-hidden"
                 onChange={(event) => {
-                  try {
-                    readImage(event, setImageDataUrl);
-                    setError(null);
-                  } catch (imageError: unknown) {
-                    setError(imageError instanceof Error ? imageError.message : 'Foto inválida.');
-                  }
+                  const input = event.currentTarget;
+                  const file = input.files?.[0];
+                  if (file === undefined) return;
+                  setError(null);
+                  void optimizeImage(file)
+                    .then((dataUrl) => {
+                      setImageDataUrl(dataUrl);
+                    })
+                    .catch((imageError: unknown) => {
+                      setError(
+                        imageError instanceof Error ? imageError.message : 'Foto inválida.',
+                      );
+                    })
+                    .finally(() => {
+                      input.value = '';
+                    });
                 }}
                 type="file"
               />

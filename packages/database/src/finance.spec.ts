@@ -166,6 +166,24 @@ describe('cash and expenses database', () => {
     database.close();
   });
 
+  it('não trata baixa excepcional de estoque como venda ou custo financeiro vendido', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento exceções de estoque', startsAt: Date.now() });
+    const productId = seedProduct(database);
+
+    recordStockMovement(database, { productId, type: 'loss', quantity: 2 });
+    recordStockMovement(database, { productId, type: 'breakage', quantity: 1 });
+    recordStockMovement(database, { productId, type: 'internal-consumption', quantity: 1 });
+    recordStockMovement(database, { productId, type: 'courtesy', quantity: 1 });
+
+    expect(getCashState(database)).toMatchObject({
+      grossSalesCents: 0,
+      stockCostCents: 1000,
+      projectedResultCents: -1000,
+    });
+    database.close();
+  });
+
   it('fecha com diferença e preserva os valores apurados', async () => {
     const database = await createTemporaryDatabase();
     createEvent(database, { name: 'Evento fechamento', startsAt: Date.now() });

@@ -13,6 +13,7 @@ export const servicePointSchema = z.object({
   eventId: z.uuid(),
   label: z.string().trim().min(1).max(40),
   type: servicePointTypeSchema,
+  pinned: z.boolean(),
   status: servicePointStatusSchema,
   activeOrderId: z.uuid().nullable(),
   activeOrderTotalCents: z.number().int().nonnegative(),
@@ -101,6 +102,33 @@ export const createServicePointInputSchema = z.object({
   type: servicePointTypeSchema,
 });
 
+export const renameServicePointInputSchema = z.object({
+  servicePointId: z.uuid(),
+  label: z.string().trim().min(1).max(40),
+});
+
+export const setServicePointPinnedInputSchema = z.object({
+  servicePointId: z.uuid(),
+  pinned: z.boolean(),
+});
+
+export const deleteServicePointModeSchema = z.enum(['delete-all', 'keep-sales-history']);
+
+export const deleteServicePointInputSchema = z.object({
+  servicePointId: z.uuid(),
+  mode: deleteServicePointModeSchema,
+  reason: z.string().trim().min(3).max(240),
+});
+
+export const servicePointDeletionResultSchema = z.object({
+  servicePointId: z.uuid(),
+  deleted: z.literal(true),
+  mode: deleteServicePointModeSchema,
+  cancelledOrdersCount: z.number().int().nonnegative(),
+  preservedOrdersCount: z.number().int().nonnegative(),
+  affectedVouchersCount: z.number().int().nonnegative(),
+});
+
 export const openOrderInputSchema = z.object({
   servicePointId: z.uuid(),
 });
@@ -183,6 +211,11 @@ export type Order = z.infer<typeof orderSchema>;
 export type OperationCatalogItem = z.infer<typeof operationCatalogItemSchema>;
 export type OperationState = z.infer<typeof operationStateSchema>;
 export type CreateServicePointInput = z.infer<typeof createServicePointInputSchema>;
+export type RenameServicePointInput = z.infer<typeof renameServicePointInputSchema>;
+export type SetServicePointPinnedInput = z.infer<typeof setServicePointPinnedInputSchema>;
+export type DeleteServicePointMode = z.infer<typeof deleteServicePointModeSchema>;
+export type DeleteServicePointInput = z.infer<typeof deleteServicePointInputSchema>;
+export type ServicePointDeletionResult = z.infer<typeof servicePointDeletionResultSchema>;
 export type OpenOrderInput = z.infer<typeof openOrderInputSchema>;
 export type GetOrderInput = z.infer<typeof getOrderInputSchema>;
 export type AddOrderItemInput = z.infer<typeof addOrderItemInputSchema>;
@@ -196,6 +229,9 @@ export type CancelOrderInput = z.infer<typeof cancelOrderInputSchema>;
 export interface OperationsApi {
   getState(): Promise<OperationState>;
   createServicePoint(input: CreateServicePointInput): Promise<ServicePoint>;
+  renameServicePoint(input: RenameServicePointInput): Promise<ServicePoint>;
+  setServicePointPinned(input: SetServicePointPinnedInput): Promise<ServicePoint>;
+  deleteServicePoint(input: DeleteServicePointInput): Promise<ServicePointDeletionResult>;
   openOrder(input: OpenOrderInput): Promise<Order>;
   getOrder(orderId: string): Promise<Order>;
   startOrderWithItem(input: StartOrderWithItemInput): Promise<Order>;
