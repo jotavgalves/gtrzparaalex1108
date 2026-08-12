@@ -119,6 +119,22 @@
   border-top: 1px solid var(--color-border);
 }
 
+.service-point-card__form {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.service-point-card__form select {
+  min-height: 2.75rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+}
+
 .operation-workspace {
   display: grid;
   grid-template-columns: minmax(19rem, 0.85fr) minmax(28rem, 1.15fr);

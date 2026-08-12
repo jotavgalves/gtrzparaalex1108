@@ -59,6 +59,7 @@ export function VoucherCard({
   onDelete,
 }: VoucherCardProps): React.JSX.Element {
   const [managerOpen, setManagerOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [editLabel, setEditLabel] = useState(voucher.label);
   const [editCode, setEditCode] = useState(voucher.code);
   const [editServicePointId, setEditServicePointId] = useState(
@@ -122,6 +123,7 @@ export function VoucherCard({
             disabled={busy}
             onClick={() => {
               setManagerOpen((current) => !current);
+              setDeleteOpen(false);
             }}
             type="button"
           >
@@ -161,6 +163,18 @@ export function VoucherCard({
               Saldo consumido
             </span>
           ) : null}
+          <button
+            className="button button--danger button--compact"
+            disabled={busy}
+            onClick={() => {
+              setDeleteOpen((current) => !current);
+              setManagerOpen(false);
+            }}
+            type="button"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            Excluir
+          </button>
         </div>
       )}
 
@@ -272,6 +286,11 @@ export function VoucherCard({
             </div>
           </div>
 
+        </div>
+      ) : null}
+
+      {deleteOpen && !isDeleted ? (
+        <div className="voucher-manager voucher-manager--delete">
           <div className="voucher-manager__section voucher-manager__danger">
             <strong>Excluir voucher</strong>
             <p>

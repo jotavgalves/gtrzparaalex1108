@@ -1,4 +1,5 @@
 import { Armchair, Pencil, Pin, PinOff, ShoppingBasket, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import type { DeleteServicePointMode, ServicePoint } from '@gtrz/contracts';
 
@@ -23,6 +24,8 @@ function formatMoney(cents: number): string {
   }).format(cents / 100);
 }
 
+type TableActionMode = 'rename' | 'delete' | null;
+
 export function ServicePointGrid({
   servicePoints,
   busy,
@@ -32,11 +35,27 @@ export function ServicePointGrid({
   onSetServicePointPinned,
   onDeleteServicePoint,
 }: ServicePointGridProps): React.JSX.Element {
+  const [actionServicePointId, setActionServicePointId] = useState<string | null>(null);
+  const [actionMode, setActionMode] = useState<TableActionMode>(null);
+  const [renameLabel, setRenameLabel] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteMode, setDeleteMode] = useState<DeleteServicePointMode>('keep-sales-history');
+
+  useEffect(() => {
+    if (actionServicePointId === null) return;
+    if (servicePoints.some((servicePoint) => servicePoint.id === actionServicePointId)) return;
+    setActionServicePointId(null);
+    setActionMode(null);
+    setRenameLabel('');
+    setDeleteReason('');
+  }, [actionServicePointId, servicePoints]);
+
   return (
     <div className="service-point-grid" aria-live="polite">
       {servicePoints.map((servicePoint) => {
         const Icon = servicePoint.type === 'counter' ? ShoppingBasket : Armchair;
         const open = servicePoint.status === 'open';
+        const actionOpen = actionServicePointId === servicePoint.id;
 
         return (
           <article
@@ -92,10 +111,10 @@ export function ServicePointGrid({
                   className="icon-button"
                   disabled={busy}
                   onClick={() => {
-                    const label = window.prompt('Novo nome da mesa:', servicePoint.label);
-                    if (label?.trim()) {
-                      void onRenameServicePoint(servicePoint.id, label);
-                    }
+                    setActionServicePointId(servicePoint.id);
+                    setActionMode(actionOpen && actionMode === 'rename' ? null : 'rename');
+                    setRenameLabel(servicePoint.label);
+                    setDeleteReason('');
                   }}
                   title="Renomear mesa"
                   type="button"
@@ -107,25 +126,10 @@ export function ServicePointGrid({
                   className="icon-button icon-button--danger"
                   disabled={busy}
                   onClick={() => {
-                    const rawMode = window.prompt(
-                      'Digite 1 para EXCLUIR TUDO ou 2 para MANTER VENDAS:',
-                      '2',
-                    );
-                    const mode =
-                      rawMode?.trim() === '1'
-                        ? 'delete-all'
-                        : rawMode?.trim() === '2'
-                          ? 'keep-sales-history'
-                          : null;
-                    if (mode === null) return;
-                    const reason = window.prompt('Motivo da exclusão da mesa:');
-                    if (reason?.trim()) {
-                      void onDeleteServicePoint({
-                        servicePointId: servicePoint.id,
-                        mode,
-                        reason,
-                      });
-                    }
+                    setActionServicePointId(servicePoint.id);
+                    setActionMode(actionOpen && actionMode === 'delete' ? null : 'delete');
+                    setRenameLabel(servicePoint.label);
+                    setDeleteReason('');
                   }}
                   title="Excluir mesa"
                   type="button"
@@ -133,6 +137,83 @@ export function ServicePointGrid({
                   <Trash2 size={15} aria-hidden="true" />
                 </button>
               </div>
+            ) : null}
+            {production && servicePoint.type === 'table' && actionOpen && actionMode === 'rename' ? (
+              <form
+                className="service-point-card__form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void onRenameServicePoint(servicePoint.id, renameLabel).then(() => {
+                    setActionMode(null);
+                    setActionServicePointId(null);
+                  });
+                }}
+              >
+                <label className="form-field">
+                  <span>Novo nome da mesa</span>
+                  <input
+                    disabled={busy}
+                    maxLength={40}
+                    onChange={(event) => {
+                      setRenameLabel(event.target.value);
+                    }}
+                    value={renameLabel}
+                  />
+                </label>
+                <button
+                  className="button button--primary button--compact"
+                  disabled={busy || renameLabel.trim().length === 0}
+                  type="submit"
+                >
+                  Salvar
+                </button>
+              </form>
+            ) : null}
+            {production && servicePoint.type === 'table' && actionOpen && actionMode === 'delete' ? (
+              <form
+                className="service-point-card__form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void onDeleteServicePoint({
+                    servicePointId: servicePoint.id,
+                    mode: deleteMode,
+                    reason: deleteReason,
+                  });
+                }}
+              >
+                <label className="form-field">
+                  <span>Opção de exclusão</span>
+                  <select
+                    disabled={busy}
+                    onChange={(event) => {
+                      setDeleteMode(event.target.value as DeleteServicePointMode);
+                    }}
+                    value={deleteMode}
+                  >
+                    <option value="keep-sales-history">Manter vendas</option>
+                    <option value="delete-all">Excluir tudo</option>
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span>Motivo</span>
+                  <input
+                    disabled={busy}
+                    maxLength={240}
+                    onChange={(event) => {
+                      setDeleteReason(event.target.value);
+                    }}
+                    placeholder="Motivo da exclusão"
+                    value={deleteReason}
+                  />
+                </label>
+                <button
+                  className="button button--danger button--compact"
+                  disabled={busy || deleteReason.trim().length < 3}
+                  type="submit"
+                >
+                  Excluir mesa
+                </button>
+              </form>
             ) : null}
           </article>
         );
