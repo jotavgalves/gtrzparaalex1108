@@ -25,6 +25,11 @@ Write-Host "Backup: $backupFile"
 
 if ($Install) {
   Write-Host ""
-  Write-Host "Instalando GTRZ System..."
-  Start-Process -FilePath (Join-Path $targetDir $setupFile) -Wait
+  Write-Host "Fechando GTRZ System se estiver aberto..."
+  Get-Process -Name 'GTRZ System' -ErrorAction SilentlyContinue | Stop-Process -Force
+
+  Write-Host "Instalando GTRZ System em modo silencioso..."
+  Start-Process -FilePath (Join-Path $targetDir $setupFile) -ArgumentList '/S' -Wait -WindowStyle Hidden
+
+  Write-Host "Atualizacao concluida."
 }
