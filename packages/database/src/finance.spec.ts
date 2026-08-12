@@ -24,6 +24,7 @@ import {
   recordCashMovement,
   recordStockMovement,
   switchProfile,
+  updateExpense,
   updateExpensePaymentStatus,
   type DatabaseContext,
 } from './index';
@@ -163,6 +164,42 @@ describe('cash and expenses database', () => {
     });
     expect(paid.paymentStatus).toBe('paid');
     expect(getCashState(database).projectedResultCents).toBe(-1200);
+    database.close();
+  });
+
+  it('edita dados principais da despesa e recalcula o resultado', async () => {
+    const database = await createTemporaryDatabase();
+    createEvent(database, { name: 'Evento edição despesa', startsAt: Date.now() });
+    const expense = createExpense(database, {
+      category: 'Estrutura',
+      description: 'Locação de equipamento',
+      amountCents: 1200,
+      paymentMethod: 'pix',
+      note: 'Primeiro orçamento',
+    });
+
+    const updated = updateExpense(database, {
+      expenseId: expense.id,
+      category: 'Operação',
+      description: 'Locação de gerador',
+      amountCents: 1800,
+      paymentMethod: 'credit-card',
+      paymentStatus: 'partial',
+      note: 'Valor revisado',
+    });
+
+    expect(updated).toMatchObject({
+      id: expense.id,
+      category: 'Operação',
+      description: 'Locação de gerador',
+      amountCents: 1800,
+      paymentMethod: 'credit-card',
+      paymentStatus: 'partial',
+      note: 'Valor revisado',
+      status: 'active',
+    });
+    expect(getCashState(database).activeExpensesCents).toBe(1800);
+    expect(getCashState(database).projectedResultCents).toBe(-1800);
     database.close();
   });
 

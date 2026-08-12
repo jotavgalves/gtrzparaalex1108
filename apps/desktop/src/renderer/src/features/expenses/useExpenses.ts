@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { CreateExpenseInput, ExpensePaymentStatus, ExpenseState } from '@gtrz/contracts';
+import type {
+  CreateExpenseInput,
+  ExpensePaymentStatus,
+  ExpenseState,
+  UpdateExpenseInput,
+} from '@gtrz/contracts';
 
 interface ExpenseViewState {
   readonly state: ExpenseState | null;
@@ -10,6 +15,7 @@ interface ExpenseViewState {
   readonly message: string | null;
   readonly reload: () => Promise<void>;
   readonly createExpense: (input: CreateExpenseInput) => Promise<void>;
+  readonly updateExpense: (input: UpdateExpenseInput) => Promise<void>;
   readonly updatePaymentStatus: (
     expenseId: string,
     paymentStatus: ExpensePaymentStatus,
@@ -82,6 +88,13 @@ export function useExpenses(): ExpenseViewState {
     [run],
   );
 
+  const updateExpense = useCallback(
+    async (input: UpdateExpenseInput): Promise<void> => {
+      await run(() => window.gtrz.expenses.update(input), 'Despesa editada.');
+    },
+    [run],
+  );
+
   const cancelExpense = useCallback(
     async (expenseId: string, reason: string): Promise<void> => {
       await run(() => window.gtrz.expenses.cancel({ expenseId, reason }), 'Despesa cancelada.');
@@ -107,6 +120,7 @@ export function useExpenses(): ExpenseViewState {
     message,
     reload,
     createExpense,
+    updateExpense,
     updatePaymentStatus,
     cancelExpense,
     deleteExpense,

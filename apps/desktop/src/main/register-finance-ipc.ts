@@ -12,6 +12,7 @@ import {
   IPC_CHANNELS,
   openCashRegisterInputSchema,
   recordCashMovementInputSchema,
+  updateExpenseInputSchema,
   updateExpensePaymentStatusInputSchema,
 } from '@gtrz/contracts';
 import {
@@ -23,6 +24,7 @@ import {
   getExpenseState,
   openCashRegister,
   recordCashMovement,
+  updateExpense,
   updateExpensePaymentStatus,
   type DatabaseContext,
 } from '@gtrz/database';
@@ -38,6 +40,7 @@ const FINANCE_CHANNELS = [
   IPC_CHANNELS.cashClose,
   IPC_CHANNELS.expensesGetState,
   IPC_CHANNELS.expensesCreate,
+  IPC_CHANNELS.expensesUpdate,
   IPC_CHANNELS.expensesUpdatePaymentStatus,
   IPC_CHANNELS.expensesCancel,
   IPC_CHANNELS.expensesDelete,
@@ -84,6 +87,21 @@ export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): 
         amountCents: input.amountCents,
         paymentMethod: input.paymentMethod,
         ...(input.paymentStatus === undefined ? {} : { paymentStatus: input.paymentStatus }),
+        ...(input.note === undefined ? {} : { note: input.note }),
+      }),
+    );
+  });
+
+  ipcMain.handle(IPC_CHANNELS.expensesUpdate, (_event, payload: unknown) => {
+    const input = updateExpenseInputSchema.parse(payload);
+    return expenseSchema.parse(
+      updateExpense(options.getDatabase(), {
+        expenseId: input.expenseId,
+        category: input.category,
+        description: input.description,
+        amountCents: input.amountCents,
+        paymentMethod: input.paymentMethod,
+        paymentStatus: input.paymentStatus,
         ...(input.note === undefined ? {} : { note: input.note }),
       }),
     );

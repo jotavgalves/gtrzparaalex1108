@@ -29,6 +29,7 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   'cash.movement-recorded': 'Movimentação de caixa registrada',
   'cash.closed': 'Caixa fechado',
   'expense.created': 'Despesa registrada',
+  'expense.updated': 'Despesa editada',
   'expense.payment-status-changed': 'Situação da despesa alterada',
   'expense.cancelled': 'Despesa cancelada',
   'expense.deleted': 'Despesa excluída definitivamente',

@@ -171,6 +171,7 @@
 }
 
 .expense-cancel-form,
+.expense-edit-form,
 .expense-manage-drawer {
   display: grid;
   gap: var(--space-3);

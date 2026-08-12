@@ -101,6 +101,16 @@ export const updateExpensePaymentStatusInputSchema = z.object({
   paymentStatus: expensePaymentStatusSchema,
 });
 
+export const updateExpenseInputSchema = z.object({
+  expenseId: z.uuid(),
+  category: z.string().trim().min(2).max(80),
+  description: z.string().trim().min(2).max(160),
+  amountCents: z.number().int().positive(),
+  paymentMethod: paymentMethodSchema,
+  paymentStatus: expensePaymentStatusSchema,
+  note: z.string().trim().max(240).optional(),
+});
+
 export const cancelExpenseInputSchema = z.object({
   expenseId: z.uuid(),
   reason: z.string().trim().min(3).max(240),
@@ -131,6 +141,7 @@ export type Expense = z.infer<typeof expenseSchema>;
 export type ExpenseState = z.infer<typeof expenseStateSchema>;
 export type CreateExpenseInput = z.infer<typeof createExpenseInputSchema>;
 export type UpdateExpensePaymentStatusInput = z.infer<typeof updateExpensePaymentStatusInputSchema>;
+export type UpdateExpenseInput = z.infer<typeof updateExpenseInputSchema>;
 export type CancelExpenseInput = z.infer<typeof cancelExpenseInputSchema>;
 export type DeleteExpenseInput = z.infer<typeof deleteExpenseInputSchema>;
 export type ExpenseDeletionResult = z.infer<typeof expenseDeletionResultSchema>;
@@ -145,6 +156,7 @@ export interface CashApi {
 export interface ExpenseApi {
   getState(): Promise<ExpenseState>;
   create(input: CreateExpenseInput): Promise<Expense>;
+  update(input: UpdateExpenseInput): Promise<Expense>;
   updatePaymentStatus(input: UpdateExpensePaymentStatusInput): Promise<Expense>;
   cancel(input: CancelExpenseInput): Promise<Expense>;
   delete(input: DeleteExpenseInput): Promise<ExpenseDeletionResult>;

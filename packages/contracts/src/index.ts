@@ -84,6 +84,7 @@ export const IPC_CHANNELS = {
   cashClose: 'cash:close',
   expensesGetState: 'expenses:get-state',
   expensesCreate: 'expenses:create',
+  expensesUpdate: 'expenses:update',
   expensesUpdatePaymentStatus: 'expenses:update-payment-status',
   expensesCancel: 'expenses:cancel',
   expensesDelete: 'expenses:delete',

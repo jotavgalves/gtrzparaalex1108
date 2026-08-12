@@ -20,6 +20,7 @@ export function ExpensesPage(): React.JSX.Element {
     message,
     reload,
     createExpense,
+    updateExpense,
     updatePaymentStatus,
     cancelExpense,
     deleteExpense,
@@ -108,6 +109,7 @@ export function ExpensesPage(): React.JSX.Element {
                 onCancel={cancelExpense}
                 onDelete={deleteExpense}
                 onPaymentStatusChange={updatePaymentStatus}
+                onUpdate={updateExpense}
               />
             ))}
           </div>

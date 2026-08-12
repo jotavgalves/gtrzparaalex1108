@@ -224,6 +224,86 @@ export function updateExpensePaymentStatus(
   return mapExpense(requireExpense(database, expense.id));
 }
 
+export function updateExpense(
+  database: DatabaseContext,
+  input: {
+    readonly expenseId: string;
+    readonly category: string;
+    readonly description: string;
+    readonly amountCents: number;
+    readonly paymentMethod: DatabasePaymentMethod;
+    readonly paymentStatus: DatabaseExpensePaymentStatus;
+    readonly note?: string;
+  },
+): DatabaseExpense {
+  requireProduction(database);
+  const eventId = requireActiveEvent(database);
+  const expense = requireExpense(database, input.expenseId);
+
+  if (expense.event_id !== eventId) {
+    throw new Error('A despesa não pertence ao evento ativo.');
+  }
+
+  if (expense.status === 'cancelled') {
+    throw new Error('Não é possível editar uma despesa cancelada.');
+  }
+
+  if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
+    throw new Error('O valor da despesa deve ser positivo.');
+  }
+
+  const category = input.category.trim();
+  const description = input.description.trim();
+  const note = normalizeOptionalText(input.note);
+  const now = Date.now();
+
+  database.sqlite.transaction(() => {
+    database.sqlite
+      .prepare(
+        `UPDATE expenses
+         SET category = ?, description = ?, amount_cents = ?, payment_method = ?,
+             payment_status = ?, note = ?, updated_at = ?
+         WHERE id = ?`,
+      )
+      .run(
+        category,
+        description,
+        input.amountCents,
+        input.paymentMethod,
+        input.paymentStatus,
+        note,
+        now,
+        expense.id,
+      );
+    appendAudit(database, {
+      action: 'expense.updated',
+      entityType: 'expense',
+      entityId: expense.id,
+      eventId,
+      details: {
+        before: {
+          amountCents: expense.amount_cents,
+          category: expense.category,
+          description: expense.description,
+          note: expense.note,
+          paymentMethod: expense.payment_method,
+          paymentStatus: expense.payment_status,
+        },
+        after: {
+          amountCents: input.amountCents,
+          category,
+          description,
+          note,
+          paymentMethod: input.paymentMethod,
+          paymentStatus: input.paymentStatus,
+        },
+      },
+    });
+  })();
+
+  return mapExpense(requireExpense(database, expense.id));
+}
+
 export function cancelExpense(
   database: DatabaseContext,
   input: { readonly expenseId: string; readonly reason: string },

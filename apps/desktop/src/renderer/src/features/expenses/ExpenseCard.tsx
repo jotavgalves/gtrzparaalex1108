@@ -1,7 +1,12 @@
-import { Ban, CreditCard, Settings2, Trash2, WalletCards } from 'lucide-react';
-import { useState } from 'react';
+import { Ban, CreditCard, Pencil, Save, Settings2, Trash2, WalletCards } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import type { Expense, ExpensePaymentStatus } from '@gtrz/contracts';
+import type {
+  Expense,
+  ExpensePaymentStatus,
+  PaymentMethod,
+  UpdateExpenseInput,
+} from '@gtrz/contracts';
 
 interface ExpenseCardProps {
   readonly expense: Expense;
@@ -10,6 +15,7 @@ interface ExpenseCardProps {
     expenseId: string,
     paymentStatus: ExpensePaymentStatus,
   ) => Promise<void>;
+  readonly onUpdate: (input: UpdateExpenseInput) => Promise<void>;
   readonly onCancel: (expenseId: string, reason: string) => Promise<void>;
   readonly onDelete: (expenseId: string, reason: string) => Promise<void>;
 }
@@ -40,15 +46,49 @@ function formatMoney(cents: number): string {
   }).format(cents / 100);
 }
 
+function formatMoneyInput(cents: number): string {
+  return (cents / 100).toFixed(2).replace('.', ',');
+}
+
+function parseMoney(value: string): number {
+  const amount = Number(value.trim().replace(',', '.'));
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+}
+
 export function ExpenseCard({
   expense,
   busy,
   onPaymentStatusChange,
+  onUpdate,
   onCancel,
   onDelete,
 }: ExpenseCardProps): React.JSX.Element {
   const [reason, setReason] = useState('');
   const [managing, setManaging] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [category, setCategory] = useState(expense.category);
+  const [description, setDescription] = useState(expense.description);
+  const [amount, setAmount] = useState(formatMoneyInput(expense.amountCents));
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(expense.paymentMethod);
+  const [paymentStatus, setPaymentStatus] = useState<ExpensePaymentStatus>(expense.paymentStatus);
+  const [note, setNote] = useState(expense.note ?? '');
+  const parsedAmountCents = parseMoney(amount);
+
+  useEffect(() => {
+    setCategory(expense.category);
+    setDescription(expense.description);
+    setAmount(formatMoneyInput(expense.amountCents));
+    setPaymentMethod(expense.paymentMethod);
+    setPaymentStatus(expense.paymentStatus);
+    setNote(expense.note ?? '');
+  }, [
+    expense.amountCents,
+    expense.category,
+    expense.description,
+    expense.note,
+    expense.paymentMethod,
+    expense.paymentStatus,
+  ]);
 
   return (
     <article className="expense-card expense-card--compact">
@@ -97,28 +137,160 @@ export function ExpenseCard({
       {managing ? (
         <div className="expense-manage-drawer">
           {expense.status === 'active' ? (
-            <label className="form-field">
-              <span>Situação do pagamento</span>
-              <select
+            <>
+              <button
+                className="button button--secondary button--compact"
                 disabled={busy}
-                onChange={(event) => {
-                  void onPaymentStatusChange(
-                    expense.id,
-                    event.target.value as ExpensePaymentStatus,
-                  );
+                onClick={() => {
+                  setEditing((value) => !value);
                 }}
-                value={expense.paymentStatus}
+                type="button"
               >
-                {Object.entries(STATUS_LABELS).map(([status, label]) => (
-                  <option key={status} value={status}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <small>
-                Esta situação é somente controle interno e não altera o cálculo do resultado.
-              </small>
-            </label>
+                <Pencil size={15} aria-hidden="true" />
+                Editar despesa
+              </button>
+
+              {editing ? (
+                <form
+                  className="expense-edit-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void onUpdate({
+                      expenseId: expense.id,
+                      category: category.trim(),
+                      description: description.trim(),
+                      amountCents: parsedAmountCents,
+                      paymentMethod,
+                      paymentStatus,
+                      ...(note.trim().length === 0 ? {} : { note: note.trim() }),
+                    }).then(() => {
+                      setEditing(false);
+                    });
+                  }}
+                >
+                  <div className="expense-form__row">
+                    <label className="form-field">
+                      <span>Categoria</span>
+                      <input
+                        disabled={busy}
+                        maxLength={80}
+                        onChange={(event) => {
+                          setCategory(event.target.value);
+                        }}
+                        required
+                        value={category}
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Descrição</span>
+                      <input
+                        disabled={busy}
+                        maxLength={160}
+                        onChange={(event) => {
+                          setDescription(event.target.value);
+                        }}
+                        required
+                        value={description}
+                      />
+                    </label>
+                  </div>
+                  <div className="expense-form__row">
+                    <label className="form-field">
+                      <span>Valor</span>
+                      <input
+                        disabled={busy}
+                        inputMode="decimal"
+                        onChange={(event) => {
+                          setAmount(event.target.value);
+                        }}
+                        required
+                        value={amount}
+                      />
+                    </label>
+                    <label className="form-field">
+                      <span>Situação</span>
+                      <select
+                        disabled={busy}
+                        onChange={(event) => {
+                          setPaymentStatus(event.target.value as ExpensePaymentStatus);
+                        }}
+                        value={paymentStatus}
+                      >
+                        {Object.entries(STATUS_LABELS).map(([status, label]) => (
+                          <option key={status} value={status}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <label className="form-field">
+                    <span>Forma de pagamento</span>
+                    <select
+                      disabled={busy}
+                      onChange={(event) => {
+                        setPaymentMethod(event.target.value as PaymentMethod);
+                      }}
+                      value={paymentMethod}
+                    >
+                      {Object.entries(PAYMENT_LABELS).map(([method, label]) => (
+                        <option key={method} value={method}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="form-field">
+                    <span>Observação</span>
+                    <input
+                      disabled={busy}
+                      maxLength={240}
+                      onChange={(event) => {
+                        setNote(event.target.value);
+                      }}
+                      placeholder="Opcional"
+                      value={note}
+                    />
+                  </label>
+                  <button
+                    className="button button--primary button--compact"
+                    disabled={
+                      busy ||
+                      category.trim().length < 2 ||
+                      description.trim().length < 2 ||
+                      parsedAmountCents <= 0
+                    }
+                    type="submit"
+                  >
+                    <Save size={15} aria-hidden="true" />
+                    Salvar alterações
+                  </button>
+                </form>
+              ) : (
+                <label className="form-field">
+                  <span>Situação do pagamento</span>
+                  <select
+                    disabled={busy}
+                    onChange={(event) => {
+                      void onPaymentStatusChange(
+                        expense.id,
+                        event.target.value as ExpensePaymentStatus,
+                      );
+                    }}
+                    value={expense.paymentStatus}
+                  >
+                    {Object.entries(STATUS_LABELS).map(([status, label]) => (
+                      <option key={status} value={status}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Esta situação é somente controle interno e não altera o cálculo do resultado.
+                  </small>
+                </label>
+              )}
+            </>
           ) : null}
 
           <label className="form-field">
