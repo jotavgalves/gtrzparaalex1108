@@ -1,20 +1,14 @@
-import path from 'node:path';
+import { expect, test } from '@playwright/test';
 
-import { expect, test, type Page } from '@playwright/test';
-import { _electron as electron } from 'playwright';
-
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
-
-async function ensureProduction(window: Page): Promise<void> {
-  if (await window.getByText('Caixa', { exact: true }).isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
 test('SMK-FIN-001 — concilia despesa, suprimento e diferença de caixa', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  test.setTimeout(60_000);
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -46,10 +40,11 @@ test('SMK-FIN-001 — concilia despesa, suprimento e diferença de caixa', async
 
     await window.getByRole('link', { name: 'Caixa' }).click();
     await expect(window.getByText('R$ 80,00', { exact: true }).first()).toBeVisible();
-    await window.getByLabel('Tipo').selectOption('supply');
-    await window.getByLabel('Valor', { exact: true }).fill('10.00');
-    await window.getByPlaceholder('Ex.: reforço de troco').fill('Troco adicional');
-    await window.getByRole('button', { name: 'Registrar' }).click();
+    const movementForm = window.locator('form.finance-movement-form');
+    await movementForm.getByLabel('Tipo').selectOption('supply');
+    await movementForm.getByLabel('Valor', { exact: true }).fill('10.00');
+    await movementForm.getByPlaceholder('Ex.: reforço de troco').fill('Troco adicional');
+    await movementForm.getByRole('button', { name: 'Registrar' }).click();
     await expect(window.getByText('Suprimento registrado.')).toBeVisible();
     await expect(window.getByText('R$ 90,00', { exact: true }).first()).toBeVisible();
 
@@ -59,6 +54,6 @@ test('SMK-FIN-001 — concilia despesa, suprimento e diferença de caixa', async
     await expect(window.getByText('Caixa encerrado')).toBeVisible();
     await expect(window.getByText('-R$ 5,00', { exact: true })).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

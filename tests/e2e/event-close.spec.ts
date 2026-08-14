@@ -1,19 +1,12 @@
-import path from 'node:path';
-
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { _electron as electron } from 'playwright';
 
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
 type CloseOutcome = 'success' | 'failure' | 'pending';
-
-async function ensureProduction(window: Page): Promise<void> {
-  if (await window.getByText('Caixa', { exact: true }).isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
 
 async function waitForCloseOutcome(
   window: Page,
@@ -39,7 +32,7 @@ async function waitForCloseOutcome(
 
 test('SMK-END-001 — concilia, gera backup e encerra o evento', async () => {
   test.setTimeout(90_000);
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -93,6 +86,6 @@ test('SMK-END-001 — concilia, gera backup e encerra o evento', async () => {
     await expect(closedStatus).toBeVisible();
     await expect(window.getByText('Nenhum', { exact: true }).first()).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

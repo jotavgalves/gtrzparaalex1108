@@ -155,7 +155,7 @@
 }
 .inventory-toolbar {
   display: grid;
-  grid-template-columns: minmax(18rem, 1fr) minmax(10rem, 0.28fr) minmax(12rem, 0.34fr);
+  grid-template-columns: minmax(14rem, 1fr) minmax(10rem, 0.28fr) minmax(12rem, 0.34fr);
   gap: var(--space-3);
 }
 .inventory-search {
@@ -388,7 +388,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .inventory-toolbar {
-    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(10rem, 0.5fr));
+    grid-template-columns: minmax(0, 1fr);
   }
   .inventory-card__prices--compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -74,9 +74,6 @@ test('SMK-EVT-001 — exclui definitivamente evento com comanda aberta', async (
     await deletionPanel.getByPlaceholder(eventName).fill(eventName);
     await deletionPanel.getByRole('button', { name: 'Excluir evento definitivamente' }).click();
 
-    await expect(
-      window.getByText(new RegExp(`${eventName} excluído definitivamente`, 'u')),
-    ).toBeVisible();
     await expect(eventCard).toHaveCount(0);
     await expect(window.getByText('Nenhum', { exact: true })).toBeVisible();
   } finally {

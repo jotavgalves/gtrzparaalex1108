@@ -1,21 +1,14 @@
-import path from 'node:path';
+import { expect, test } from '@playwright/test';
 
-import { expect, test, type Page } from '@playwright/test';
-import { _electron as electron } from 'playwright';
-
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
-
-async function ensureProduction(window: Page): Promise<void> {
-  if (await window.getByText('Caixa', { exact: true }).isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
 test('SMK-INS-001 — consolida evento e pesquisa sua trilha de auditoria', async () => {
   test.setTimeout(60_000);
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -54,6 +47,6 @@ test('SMK-INS-001 — consolida evento e pesquisa sua trilha de auditoria', asyn
     await expect(createdAuditCard).toHaveCount(1);
     await expect(createdAuditCard).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

@@ -1,12 +1,9 @@
-import path from 'node:path';
-
 import { expect, test } from '@playwright/test';
-import { _electron as electron } from 'playwright';
 
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
+import { closeElectronApplication, launchElectronApplication } from './electron-app';
 
 test('SMK-INF-002 — abre o GTRZ System com navegação modular', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -24,12 +21,12 @@ test('SMK-INF-002 — abre o GTRZ System com navegação modular', async () => {
     await expect(window.getByRole('link', { name: 'Mesas e balcão' })).toBeVisible();
     await expect(window.getByText('Banco íntegro')).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });
 
 test('SMK-USR-001 — Caixa vê somente os módulos permitidos e retorna com senha', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -49,12 +46,12 @@ test('SMK-USR-001 — Caixa vê somente os módulos permitidos e retorna com sen
     await expect(window.getByRole('link', { name: 'Ingressos' })).toBeVisible();
     await expect(window.getByRole('link', { name: 'Configurações' })).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });
 
 test('SMK-BKP-001 — cria e verifica backup manual pela interface', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -70,12 +67,12 @@ test('SMK-BKP-001 — cria e verifica backup manual pela interface', async () =>
     await verifyButton.click();
     await expect(window.getByText(/está íntegro/u)).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });
 
 test('SMK-EST-001 — cadastra produto, movimenta saldo e protege custos no Caixa', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -140,6 +137,6 @@ test('SMK-EST-001 — cadastra produto, movimenta saldo e protege custos no Caix
     await expect(productCard.getByRole('button', { name: 'Entrada', exact: true })).toHaveCount(0);
     await expect(productCard.getByRole('button', { name: /Baixar estoque/u })).toHaveCount(0);
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

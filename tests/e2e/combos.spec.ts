@@ -1,12 +1,9 @@
-import path from 'node:path';
-
 import { expect, test } from '@playwright/test';
-import { _electron as electron } from 'playwright';
 
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
+import { closeElectronApplication, launchElectronApplication } from './electron-app';
 
 test('SMK-CMB-001 — calcula combo pelo estoque dos componentes e protege custos no Caixa', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -83,6 +80,6 @@ test('SMK-CMB-001 — calcula combo pelo estoque dos componentes e protege custo
     await window.getByRole('button', { name: 'Entrar em Produção' }).click();
     await expect(window.getByText('Produção', { exact: true })).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

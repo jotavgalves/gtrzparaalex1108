@@ -19,7 +19,7 @@
 
 .service-point-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: var(--space-4);
 }
 
@@ -152,7 +152,7 @@
 .operation-catalog {
   position: sticky;
   top: var(--space-5);
-  max-height: calc(100vh - 8rem);
+  max-height: calc(100vh - var(--topbar-height) - 5rem);
 }
 
 .operation-catalog__filters {
@@ -569,10 +569,6 @@
 }
 
 @media (max-width: 1360px) {
-  .service-point-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .operation-workspace {
     grid-template-columns: minmax(17rem, 0.75fr) minmax(26rem, 1.25fr);
   }
@@ -591,10 +587,6 @@
   .operation-catalog {
     position: static;
     max-height: none;
-  }
-
-  .service-point-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -8,7 +8,7 @@ $repo = 'jotavgalves/gtrzparaalex1108'
 $baseUrl = "https://github.com/$repo/releases/latest/download"
 $targetDir = Join-Path ([Environment]::GetFolderPath('Desktop')) 'GTRZ-Alex-1108'
 $setupFile = 'GTRZ-System-0.1.0-Setup.exe'
-$backupFile = 'GTRZ-LA-RUMBA-JAMPA-2026-08-11.gtrzbackup'
+$backupFile = 'GTRZ-LA-RUMBA-JAMPA-2026-08-14.gtrzbackup'
 
 New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 

@@ -93,11 +93,12 @@ export function EventsPage(): React.JSX.Element {
     await Promise.all([reload(), refreshSession()]);
   }
 
-  function handleDeleteCompleted(result: EventDeletionResult): void {
+  async function handleDeleteCompleted(result: EventDeletionResult): Promise<void> {
     setDeletingEventId(null);
     setDeleteMessage(
       `${result.eventName} excluído definitivamente. Foram removidas ${String(result.removedOrdersCount)} comandas, ${String(result.removedExpensesCount)} despesas e ${String(result.removedStockMovementsCount)} movimentações de estoque.`,
     );
+    await Promise.all([reload(), refreshSession()]);
   }
 
   return (
@@ -158,7 +159,9 @@ export function EventsPage(): React.JSX.Element {
           onCancel={() => {
             setDeletingEventId(null);
           }}
-          onCompleted={handleDeleteCompleted}
+          onCompleted={(result) => {
+            void handleDeleteCompleted(result);
+          }}
           onDelete={deletePermanently}
         />
       )}

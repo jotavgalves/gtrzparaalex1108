@@ -28,7 +28,7 @@ export function useEvents(): EventsState {
   const [events, setEvents] = useState<readonly GtrzEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { setActiveEvent, refresh } = useSession();
+  const { setActiveEvent } = useSession();
 
   const reload = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -93,16 +93,14 @@ export function useEvents(): EventsState {
       setError(null);
 
       try {
-        const result = await window.gtrz.events.delete({ eventId, confirmationName, reason });
-        await Promise.all([reload(), refresh()]);
-        return result;
+        return await window.gtrz.events.delete({ eventId, confirmationName, reason });
       } catch (deletionError: unknown) {
         const message = getErrorMessage(deletionError);
         setError(message);
         throw new Error(message);
       }
     },
-    [refresh, reload],
+    [],
   );
 
   const select = useCallback(

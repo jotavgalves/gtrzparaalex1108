@@ -13,8 +13,8 @@ body,
 }
 
 body {
-  min-width: 1180px;
-  min-height: 720px;
+  min-width: 960px;
+  min-height: 640px;
   overflow: hidden;
   background: var(--color-bg);
   color: var(--color-text);
@@ -87,10 +87,13 @@ strong {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
   min-height: 2.75rem;
   padding: 0 var(--space-5);
   border-radius: var(--radius-md);
   font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
   transition:
     background-color var(--transition-fast),
     transform var(--transition-fast);

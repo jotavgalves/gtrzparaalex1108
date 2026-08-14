@@ -24,9 +24,14 @@
 
 .finance-movement-form {
   display: grid;
-  grid-template-columns: minmax(8rem, 0.7fr) minmax(8rem, 0.7fr) minmax(12rem, 1fr) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
   gap: var(--space-3);
+}
+
+.finance-note-field,
+.finance-movement-form > .button {
+  grid-column: 1 / -1;
 }
 
 .finance-control-card--closed {

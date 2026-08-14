@@ -1,20 +1,13 @@
-import path from 'node:path';
+import { expect, test } from '@playwright/test';
 
-import { expect, test, type Page } from '@playwright/test';
-import { _electron as electron } from 'playwright';
-
-const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
-
-async function ensureProduction(window: Page): Promise<void> {
-  if (await window.getByText('Caixa', { exact: true }).isVisible()) {
-    await window.getByPlaceholder('Digite a senha').fill('121225');
-    await window.getByRole('button', { name: 'Entrar em Produção' }).click();
-    await expect(window.getByText('Produção', { exact: true })).toBeVisible();
-  }
-}
+import {
+  closeElectronApplication,
+  ensureProduction,
+  launchElectronApplication,
+} from './electron-app';
 
 test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async () => {
-  const electronApplication = await electron.launch({ args: [applicationPath] });
+  const electronApplication = await launchElectronApplication();
 
   try {
     const window = await electronApplication.firstWindow();
@@ -79,6 +72,7 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
     await expect(window.getByText('Troco: R$ 10,00', { exact: true })).toBeVisible();
     await window.getByRole('button', { name: 'Concluir venda' }).click();
     await expect(window.getByText('Venda concluída e estoque atualizado.')).toBeVisible();
+    await window.getByRole('button', { name: 'Voltar para mesas' }).click();
     await expect(window.getByRole('button', { name: new RegExp(tableName, 'u') })).toContainText(
       'Livre',
     );
@@ -122,6 +116,6 @@ test('SMK-OPR-001 — vende, estorna e devolve o estoque pela interface', async 
     productCard = window.locator('article.inventory-card').filter({ hasText: productName });
     await expect(productCard.getByText('5 un.', { exact: true })).toBeVisible();
   } finally {
-    await electronApplication.close();
+    await closeElectronApplication(electronApplication);
   }
 });

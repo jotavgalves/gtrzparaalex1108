@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -8,6 +10,7 @@ import { _electron as electron, type ElectronApplication } from 'playwright';
 const execFileAsync = promisify(execFile);
 const applicationPath = path.join(process.cwd(), 'apps', 'desktop');
 const cleanupTimeout = 5_000;
+const userDataDirectories = new WeakMap<ElectronApplication, string>();
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
@@ -32,10 +35,17 @@ export async function launchElectronApplication(): Promise<ElectronApplication> 
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), 'gtrz-e2e-'));
+
     try {
-      return await electron.launch({ args: [applicationPath] });
+      const application = await electron.launch({
+        args: [`--user-data-dir=${userDataPath}`, applicationPath],
+      });
+      userDataDirectories.set(application, userDataPath);
+      return application;
     } catch (error: unknown) {
       lastError = error;
+      await rm(userDataPath, { force: true, recursive: true }).catch(() => undefined);
 
       if (attempt < 3) {
         await delay(1_000 * attempt);
@@ -49,6 +59,7 @@ export async function launchElectronApplication(): Promise<ElectronApplication> 
 export async function closeElectronApplication(application: ElectronApplication): Promise<void> {
   const childProcess = application.process();
   const processId = childProcess.pid;
+  const userDataPath = userDataDirectories.get(application);
   let exited = childProcess.exitCode !== null;
   const exitPromise = new Promise<void>((resolve) => {
     if (exited) {
@@ -70,6 +81,11 @@ export async function closeElectronApplication(application: ElectronApplication)
 
   await Promise.race([exitPromise, delay(cleanupTimeout)]);
   await delay(300);
+
+  if (userDataPath !== undefined) {
+    await rm(userDataPath, { force: true, recursive: true }).catch(() => undefined);
+    userDataDirectories.delete(application);
+  }
 }
 
 export async function ensureProduction(window: Page): Promise<void> {
