@@ -35,9 +35,7 @@ function networkDescription(state: NetworkState | null): string {
   if (state?.mode === 'client') {
     if (!state.connected)
       return state.lastError ?? 'Não foi possível alcançar o computador servidor';
-    return state.remoteUrl === null
-      ? 'Conectado ao servidor GTRZ'
-      : `Servidor: ${state.remoteUrl}`;
+    return state.remoteUrl === null ? 'Conectado ao servidor GTRZ' : `Servidor: ${state.remoteUrl}`;
   }
   return 'Dados armazenados exclusivamente neste computador';
 }
