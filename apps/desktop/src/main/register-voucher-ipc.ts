@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   addVoucherBalanceInputSchema,
   changeVoucherStatusInputSchema,
@@ -21,29 +19,19 @@ import {
   updateManagedVoucher,
 } from '@gtrz/database/voucher-management';
 
+import type { GtrzRequestRouter } from './request-router';
+
 interface RegisterVoucherIpcOptions {
   readonly getDatabase: () => DatabaseContext;
+  readonly router: GtrzRequestRouter;
 }
 
-const VOUCHER_CHANNELS = [
-  IPC_CHANNELS.vouchersGetState,
-  IPC_CHANNELS.vouchersCreate,
-  IPC_CHANNELS.vouchersChangeStatus,
-  IPC_CHANNELS.vouchersUpdate,
-  IPC_CHANNELS.vouchersAddBalance,
-  IPC_CHANNELS.vouchersDelete,
-] as const;
-
 export function registerVoucherIpcHandlers(options: RegisterVoucherIpcOptions): void {
-  for (const channel of VOUCHER_CHANNELS) {
-    ipcMain.removeHandler(channel);
-  }
-
-  ipcMain.handle(IPC_CHANNELS.vouchersGetState, () => {
+  options.router.register(IPC_CHANNELS.vouchersGetState, () => {
     return voucherStateSchema.parse(getManagedVoucherState(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.vouchersCreate, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.vouchersCreate, (payload: unknown) => {
     const input = createVoucherInputSchema.parse(payload);
     const databaseInput =
       input.code === undefined
@@ -61,22 +49,22 @@ export function registerVoucherIpcHandlers(options: RegisterVoucherIpcOptions): 
     return voucherSchema.parse(createManagedVoucher(options.getDatabase(), databaseInput));
   });
 
-  ipcMain.handle(IPC_CHANNELS.vouchersChangeStatus, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.vouchersChangeStatus, (payload: unknown) => {
     const input = changeVoucherStatusInputSchema.parse(payload);
     return voucherSchema.parse(changeManagedVoucherStatus(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.vouchersUpdate, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.vouchersUpdate, (payload: unknown) => {
     const input = updateVoucherInputSchema.parse(payload);
     return voucherSchema.parse(updateManagedVoucher(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.vouchersAddBalance, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.vouchersAddBalance, (payload: unknown) => {
     const input = addVoucherBalanceInputSchema.parse(payload);
     return voucherSchema.parse(addManagedVoucherBalance(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.vouchersDelete, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.vouchersDelete, (payload: unknown) => {
     const input = deleteVoucherInputSchema.parse(payload);
     return deleteVoucherResultSchema.parse(deleteManagedVoucher(options.getDatabase(), input));
   });
