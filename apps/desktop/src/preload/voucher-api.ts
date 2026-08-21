@@ -35,10 +35,7 @@ export const voucherApi: VoucherApi = {
 
   async changeStatus(input: ChangeVoucherStatusInput): Promise<Voucher> {
     const parsedInput = changeVoucherStatusInputSchema.parse(input);
-    const payload: unknown = await invoke(
-      IPC_CHANNELS.vouchersChangeStatus,
-      parsedInput,
-    );
+    const payload: unknown = await invoke(IPC_CHANNELS.vouchersChangeStatus, parsedInput);
     return voucherSchema.parse(payload);
   },
 
