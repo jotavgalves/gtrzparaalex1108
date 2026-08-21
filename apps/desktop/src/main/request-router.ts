@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-export type GtrzRequestHandler = (payload: unknown) => unknown | Promise<unknown>;
+export type GtrzRequestHandler = (payload: unknown) => unknown;
 
 export interface GtrzRequestRouter {
   register(channel: string, handler: GtrzRequestHandler): void;
@@ -17,13 +17,13 @@ export function createIpcRequestRouter(): GtrzRequestRouter {
       ipcMain.handle(channel, (_event, payload: unknown) => handler(payload));
     },
 
-    async dispatch(channel: string, payload?: unknown): Promise<unknown> {
+    dispatch(channel: string, payload?: unknown): Promise<unknown> {
       const handler = handlers.get(channel);
       if (handler === undefined) {
-        throw new Error(`Canal GTRZ não registrado: ${channel}`);
+        return Promise.reject(new Error(`Canal GTRZ não registrado: ${channel}`));
       }
 
-      return handler(payload);
+      return Promise.resolve(handler(payload));
     },
   };
 }
