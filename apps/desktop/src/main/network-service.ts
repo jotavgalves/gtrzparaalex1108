@@ -287,7 +287,9 @@ export class NetworkService {
       });
     } catch (error: unknown) {
       this.lastError = errorMessage(error);
-      throw new Error(`Não foi possível iniciar o servidor GTRZ na porta ${NETWORK_PORT}. ${this.lastError}`);
+      throw new Error(
+        `Não foi possível iniciar o servidor GTRZ na porta ${NETWORK_PORT}. ${this.lastError}`,
+      );
     }
 
     this.server = server;
@@ -331,7 +333,10 @@ export class NetworkService {
     });
   }
 
-  private async handleHttpRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  private async handleHttpRequest(
+    request: IncomingMessage,
+    response: ServerResponse,
+  ): Promise<void> {
     try {
       if (request.method === 'GET' && request.url === '/health') {
         writeJson(response, 200, {
