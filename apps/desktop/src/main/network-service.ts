@@ -175,7 +175,7 @@ export class NetworkService {
   private server: Server | null = null;
   private mode: NetworkMode = 'local';
   private remoteUrl: string | null = null;
-  private clientId = randomUUID();
+  private clientId: string = randomUUID();
   private connected = true;
   private lastError: string | null = null;
 
