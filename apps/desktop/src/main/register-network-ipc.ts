@@ -1,8 +1,4 @@
-import {
-  connectNetworkInputSchema,
-  IPC_CHANNELS,
-  networkStateSchema,
-} from '@gtrz/contracts';
+import { connectNetworkInputSchema, IPC_CHANNELS, networkStateSchema } from '@gtrz/contracts';
 
 import type { NetworkService } from './network-service';
 import type { GtrzRequestRouter } from './request-router';
