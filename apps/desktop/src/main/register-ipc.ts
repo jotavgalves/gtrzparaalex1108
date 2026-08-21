@@ -1,4 +1,4 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
 
 import {
   backupRecordSchema,
@@ -50,6 +50,7 @@ import { registerOperationsIpcHandlers } from './register-operations-ipc';
 import { registerPrintingIpcHandlers } from './register-printing-ipc';
 import { registerTicketIpcHandlers } from './register-ticket-ipc';
 import { registerVoucherIpcHandlers } from './register-voucher-ipc';
+import { createIpcRequestRouter, type GtrzRequestRouter } from './request-router';
 import { ThermalPrintService } from './thermal-print-service';
 
 interface RegisterIpcOptions {
@@ -58,34 +59,11 @@ interface RegisterIpcOptions {
   readonly backupService: BackupService;
 }
 
-const CONTROL_CHANNELS = [
-  IPC_CHANNELS.systemGetInfo,
-  IPC_CHANNELS.eventsList,
-  IPC_CHANNELS.eventsCreate,
-  IPC_CHANNELS.eventsRename,
-  IPC_CHANNELS.eventsChangeStatus,
-  IPC_CHANNELS.eventsDelete,
-  IPC_CHANNELS.eventsSetActive,
-  IPC_CHANNELS.sessionGetState,
-  IPC_CHANNELS.sessionSwitchProfile,
-  IPC_CHANNELS.settingsChangeProductionPassword,
-  IPC_CHANNELS.settingsGetPaymentTerminal,
-  IPC_CHANNELS.settingsUpdatePaymentTerminal,
-  IPC_CHANNELS.backupsGetState,
-  IPC_CHANNELS.backupsChooseDestination,
-  IPC_CHANNELS.backupsCreateManual,
-  IPC_CHANNELS.backupsImport,
-  IPC_CHANNELS.backupsVerify,
-] as const;
-
-export function registerIpcHandlers(options: RegisterIpcOptions): void {
-  for (const channel of CONTROL_CHANNELS) {
-    ipcMain.removeHandler(channel);
-  }
-
+export function registerIpcHandlers(options: RegisterIpcOptions): GtrzRequestRouter {
+  const router = createIpcRequestRouter();
   const printService = new ThermalPrintService({ getDatabase: options.getDatabase });
 
-  ipcMain.handle(IPC_CHANNELS.systemGetInfo, (): SystemInfo => {
+  router.register(IPC_CHANNELS.systemGetInfo, (): SystemInfo => {
     return systemInfoSchema.parse({
       appName: 'GTRZ System',
       version: app.getVersion(),
@@ -94,21 +72,21 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     });
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsList, () => {
+  router.register(IPC_CHANNELS.eventsList, () => {
     return eventListSchema.parse(listEvents(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsCreate, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.eventsCreate, (payload: unknown) => {
     const input = createEventInputSchema.parse(payload);
     return eventSchema.parse(createEvent(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsRename, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.eventsRename, (payload: unknown) => {
     const input = renameEventInputSchema.parse(payload);
     return eventSchema.parse(renameEvent(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsChangeStatus, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.eventsChangeStatus, (payload: unknown) => {
     const input = changeEventStatusInputSchema.parse(payload);
     const database = options.getDatabase();
     const current = listEvents(database).find((event) => event.id === input.eventId);
@@ -122,78 +100,82 @@ export function registerIpcHandlers(options: RegisterIpcOptions): void {
     return eventSchema.parse(changeEventStatus(database, input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsDelete, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.eventsDelete, (payload: unknown) => {
     const input = deleteEventInputSchema.parse(payload);
     return eventDeletionResultSchema.parse(deleteEventPermanently(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventsSetActive, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.eventsSetActive, (payload: unknown) => {
     const input = setActiveEventInputSchema.parse(payload);
     return sessionStateSchema.parse(setActiveEvent(options.getDatabase(), input.eventId));
   });
 
-  ipcMain.handle(IPC_CHANNELS.sessionGetState, () => {
+  router.register(IPC_CHANNELS.sessionGetState, () => {
     return sessionStateSchema.parse(getSessionState(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.sessionSwitchProfile, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.sessionSwitchProfile, (payload: unknown) => {
     const input = switchProfileInputSchema.parse(payload);
     return sessionStateSchema.parse(
       switchProfile(options.getDatabase(), input.targetProfile, input.password),
     );
   });
 
-  ipcMain.handle(IPC_CHANNELS.settingsChangeProductionPassword, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.settingsChangeProductionPassword, (payload: unknown) => {
     const input = changeProductionPasswordInputSchema.parse(payload);
     changeProductionPassword(options.getDatabase(), input.currentPassword, input.newPassword);
     return operationResultSchema.parse({ success: true });
   });
 
-  ipcMain.handle(IPC_CHANNELS.settingsGetPaymentTerminal, () => {
+  router.register(IPC_CHANNELS.settingsGetPaymentTerminal, () => {
     return paymentTerminalSettingsSchema.parse(getPaymentTerminalSettings(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.settingsUpdatePaymentTerminal, (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.settingsUpdatePaymentTerminal, (payload: unknown) => {
     const input = updatePaymentTerminalSettingsInputSchema.parse(payload);
     return paymentTerminalSettingsSchema.parse(
       updatePaymentTerminalSettings(options.getDatabase(), input),
     );
   });
 
-  ipcMain.handle(IPC_CHANNELS.backupsGetState, async () => {
+  router.register(IPC_CHANNELS.backupsGetState, async () => {
     return backupStateSchema.parse(await options.backupService.getState());
   });
 
-  ipcMain.handle(IPC_CHANNELS.backupsChooseDestination, async () => {
+  router.register(IPC_CHANNELS.backupsChooseDestination, async () => {
     return backupStateSchema.parse(await options.backupService.chooseDestination());
   });
 
-  ipcMain.handle(IPC_CHANNELS.backupsCreateManual, async () => {
+  router.register(IPC_CHANNELS.backupsCreateManual, async () => {
     return backupRecordSchema.parse(await options.backupService.createBackup('manual'));
   });
 
-  ipcMain.handle(IPC_CHANNELS.backupsImport, async () => {
+  router.register(IPC_CHANNELS.backupsImport, async () => {
     return restoreBackupResultSchema.parse(await options.backupService.importBackup());
   });
 
-  ipcMain.handle(IPC_CHANNELS.backupsVerify, async (_event, payload: unknown) => {
+  router.register(IPC_CHANNELS.backupsVerify, async (payload: unknown) => {
     const input = verifyBackupInputSchema.parse(payload);
     return backupRecordSchema.parse(await options.backupService.verify(input.filePath));
   });
 
-  registerInsightsIpcHandlers({ getDatabase: options.getDatabase });
-  registerInventoryIpcHandlers({ getDatabase: options.getDatabase });
-  registerComboIpcHandlers({ getDatabase: options.getDatabase });
+  registerInsightsIpcHandlers({ getDatabase: options.getDatabase, router });
+  registerInventoryIpcHandlers({ getDatabase: options.getDatabase, router });
+  registerComboIpcHandlers({ getDatabase: options.getDatabase, router });
   registerEventCloseIpcHandlers({
     getDatabase: options.getDatabase,
     backupService: options.backupService,
+    router,
   });
-  registerFinanceIpcHandlers({ getDatabase: options.getDatabase });
-  registerPrintingIpcHandlers({ printService });
+  registerFinanceIpcHandlers({ getDatabase: options.getDatabase, router });
+  registerPrintingIpcHandlers({ printService, router });
   registerOperationsIpcHandlers({
     getDatabase: options.getDatabase,
     printAfterSale: (orderId) => printService.printAfterSale(orderId),
+    router,
   });
-  registerTicketIpcHandlers({ getDatabase: options.getDatabase });
-  registerVoucherIpcHandlers({ getDatabase: options.getDatabase });
+  registerTicketIpcHandlers({ getDatabase: options.getDatabase, router });
+  registerVoucherIpcHandlers({ getDatabase: options.getDatabase, router });
+
+  return router;
 }
