@@ -1,6 +1,7 @@
 import { CreditCard, KeyRound, Settings, ShieldCheck } from 'lucide-react';
 import { useEffect, useState, type SyntheticEvent } from 'react';
 
+import { NetworkSettingsPanel } from './NetworkSettingsPanel';
 import { PrintingSettingsPanel } from './PrintingSettingsPanel';
 
 function basisPointsToInput(value: number): string {
@@ -136,6 +137,8 @@ export function SettingsPage(): React.JSX.Element {
             </p>
           </div>
         </article>
+
+        <NetworkSettingsPanel />
 
         <form className="panel form-panel" onSubmit={(formEvent) => void handleSubmit(formEvent)}>
           <div className="panel__heading">
