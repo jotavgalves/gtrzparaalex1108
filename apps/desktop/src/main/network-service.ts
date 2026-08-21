@@ -11,7 +11,7 @@ import {
   type NetworkState,
 } from '@gtrz/contracts';
 
-import type { RendererRequestDispatcher, GtrzRequestRouter } from './request-router';
+import type { GtrzRequestRouter, RendererRequestDispatcher } from './request-router';
 
 const NETWORK_PORT = 3747;
 const NETWORK_PROTOCOL_VERSION = 1;
@@ -158,7 +158,7 @@ function writeJson(response: ServerResponse, statusCode: number, value: unknown)
 }
 
 async function closeServer(server: Server | null): Promise<void> {
-  if (server === null) return;
+  if (server === null || !server.listening) return;
   await new Promise<void>((resolve, reject) => {
     server.close((error) => {
       if (error === undefined) resolve();
@@ -202,7 +202,14 @@ export class NetworkService {
     this.clientId = persisted.clientId;
 
     if (persisted.mode === 'host') {
-      await this.startHost();
+      try {
+        await this.startHost();
+      } catch (error: unknown) {
+        this.mode = 'local';
+        this.remoteUrl = null;
+        this.connected = true;
+        this.lastError = `Servidor não iniciado automaticamente. ${errorMessage(error)}`;
+      }
       return;
     }
 
@@ -255,25 +262,33 @@ export class NetworkService {
   async startHost(): Promise<NetworkState> {
     await closeServer(this.server);
     this.server = null;
+    this.mode = 'local';
     this.remoteUrl = null;
+    this.connected = true;
+    this.lastError = null;
 
     const server = createServer((request, response) => {
       void this.handleHttpRequest(request, response);
     });
 
-    await new Promise<void>((resolve, reject) => {
-      const onError = (error: Error): void => {
-        server.off('listening', onListening);
-        reject(error);
-      };
-      const onListening = (): void => {
-        server.off('error', onError);
-        resolve();
-      };
-      server.once('error', onError);
-      server.once('listening', onListening);
-      server.listen(NETWORK_PORT, '0.0.0.0');
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const onError = (error: Error): void => {
+          server.off('listening', onListening);
+          reject(error);
+        };
+        const onListening = (): void => {
+          server.off('error', onError);
+          resolve();
+        };
+        server.once('error', onError);
+        server.once('listening', onListening);
+        server.listen(NETWORK_PORT, '0.0.0.0');
+      });
+    } catch (error: unknown) {
+      this.lastError = errorMessage(error);
+      throw new Error(`Não foi possível iniciar o servidor GTRZ na porta ${NETWORK_PORT}. ${this.lastError}`);
+    }
 
     this.server = server;
     this.mode = 'host';
@@ -346,11 +361,12 @@ export class NetworkService {
   }
 
   private executeIdempotentRpc(request: RpcRequest): Promise<RpcResponse> {
-    const existing = this.rpcCache.get(request.requestId);
+    const cacheKey = `${request.clientId}:${request.requestId}`;
+    const existing = this.rpcCache.get(cacheKey);
     if (existing !== undefined) return existing;
 
     const execution = this.executeRpc(request);
-    this.rpcCache.set(request.requestId, execution);
+    this.rpcCache.set(cacheKey, execution);
 
     if (this.rpcCache.size > MAX_IDEMPOTENCY_ENTRIES) {
       const oldestKey = this.rpcCache.keys().next().value;
@@ -379,27 +395,38 @@ export class NetworkService {
     let lastFailure: unknown = null;
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
+      let response: Response;
       try {
-        const response = await fetch(`${this.remoteUrl}/rpc`, {
+        response = await fetch(`${this.remoteUrl}/rpc`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body,
           signal: AbortSignal.timeout(REMOTE_TIMEOUT_MS),
         });
-        const parsed = parseJson(await response.text());
-        if (!isRecord(parsed) || typeof parsed.ok !== 'boolean') {
-          throw new Error('O servidor GTRZ retornou uma resposta inválida.');
-        }
-
-        this.connected = true;
-        this.lastError = null;
-
-        if (parsed.ok) return parsed.value;
-        if (typeof parsed.error === 'string') throw new Error(parsed.error);
-        throw new Error('O servidor GTRZ recusou a operação.');
       } catch (error: unknown) {
         lastFailure = error;
+        continue;
       }
+
+      let parsed: unknown;
+      try {
+        parsed = parseJson(await response.text());
+      } catch (error: unknown) {
+        lastFailure = error;
+        continue;
+      }
+
+      if (!isRecord(parsed) || typeof parsed.ok !== 'boolean') {
+        lastFailure = new Error('O servidor GTRZ retornou uma resposta inválida.');
+        continue;
+      }
+
+      this.connected = true;
+      this.lastError = null;
+
+      if (parsed.ok) return parsed.value;
+      if (typeof parsed.error === 'string') throw new Error(parsed.error);
+      throw new Error('O servidor GTRZ recusou a operação.');
     }
 
     this.connected = false;
