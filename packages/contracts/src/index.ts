@@ -5,6 +5,7 @@ import type { EventCloseApi } from './event-close';
 import type { CashApi, ExpenseApi } from './finance';
 import type { AuditApi, DashboardApi } from './insights';
 import type { InventoryApi } from './inventory';
+import type { NetworkApi } from './network';
 import type { OperationsApi } from './operations';
 import type { PrintingApi } from './printing';
 import type { TicketApi } from './tickets';
@@ -15,6 +16,7 @@ export * from './event-close';
 export * from './finance';
 export * from './insights';
 export * from './inventory';
+export * from './network';
 export * from './operations';
 export * from './printing';
 export * from './tickets';
@@ -22,6 +24,11 @@ export * from './vouchers';
 
 export const IPC_CHANNELS = {
   systemGetInfo: 'system:get-info',
+  networkGetState: 'network:get-state',
+  networkUseLocal: 'network:use-local',
+  networkStartHost: 'network:start-host',
+  networkConnect: 'network:connect',
+  networkDisconnect: 'network:disconnect',
   dashboardGetState: 'dashboard:get-state',
   auditList: 'audit:list',
   eventsList: 'events:list',
@@ -245,6 +252,7 @@ export interface GtrzDesktopApi {
   readonly system: {
     getInfo(): Promise<SystemInfo>;
   };
+  readonly network: NetworkApi;
   readonly dashboard: DashboardApi;
   readonly audit: AuditApi;
   readonly events: {
