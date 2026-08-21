@@ -10,9 +10,7 @@ import type { GtrzRequestRouter } from '../../apps/desktop/src/main/request-rout
 let temporaryDirectory: string | null = null;
 const services: NetworkService[] = [];
 
-function createRouter(
-  handler: (channel: string, payload?: unknown) => unknown,
-): GtrzRequestRouter {
+function createRouter(handler: (channel: string, payload?: unknown) => unknown): GtrzRequestRouter {
   return {
     register(channel, requestHandler): void {
       void channel;
