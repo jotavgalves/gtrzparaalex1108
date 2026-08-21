@@ -47,6 +47,7 @@ import { eventCloseApi } from './event-close-api';
 import { cashApi, expenseApi } from './finance-api';
 import { auditApi, dashboardApi } from './insights-api';
 import { inventoryApi } from './inventory-api';
+import { networkApi } from './network-api';
 import { operationsApi } from './operations-api';
 import { printingApi } from './printing-api';
 import { ticketApi } from './ticket-api';
@@ -60,6 +61,7 @@ const api: GtrzDesktopApi = {
       return systemInfoSchema.parse(payload);
     },
   },
+  network: networkApi,
   dashboard: dashboardApi,
   audit: auditApi,
   events: {
