@@ -28,19 +28,13 @@ export const printingApi: PrintingApi = {
 
   async updateSettings(input: UpdatePrintingSettingsInput): Promise<PrintingSettings> {
     const parsedInput = updatePrintingSettingsInputSchema.parse(input);
-    const payload: unknown = await invoke(
-      IPC_CHANNELS.printingUpdateSettings,
-      parsedInput,
-    );
+    const payload: unknown = await invoke(IPC_CHANNELS.printingUpdateSettings, parsedInput);
     return printingSettingsSchema.parse(payload);
   },
 
   async reprintOrder(input: PrintOrderInput): Promise<PrintOrderResult> {
     const parsedInput = printOrderInputSchema.parse(input);
-    const payload: unknown = await invoke(
-      IPC_CHANNELS.printingReprintOrder,
-      parsedInput,
-    );
+    const payload: unknown = await invoke(IPC_CHANNELS.printingReprintOrder, parsedInput);
     return printOrderResultSchema.parse(payload);
   },
 };
