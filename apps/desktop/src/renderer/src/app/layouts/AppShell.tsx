@@ -23,7 +23,8 @@ function formatEventDate(timestamp: number): string {
 
 function networkHeading(state: NetworkState | null): string {
   if (state?.mode === 'host') return 'Servidor GTRZ';
-  if (state?.mode === 'client') return state.connected ? 'Cliente GTRZ conectado' : 'Cliente desconectado';
+  if (state?.mode === 'client')
+    return state.connected ? 'Cliente GTRZ conectado' : 'Cliente desconectado';
   return 'Operação local';
 }
 
@@ -32,8 +33,11 @@ function networkDescription(state: NetworkState | null): string {
     return state.hostAddresses[0] ?? 'Compartilhando o banco deste computador na rede local';
   }
   if (state?.mode === 'client') {
-    if (!state.connected) return state.lastError ?? 'Não foi possível alcançar o computador servidor';
-    return state.remoteUrl === null ? 'Conectado ao servidor GTRZ' : `Servidor: ${state.remoteUrl}`;
+    if (!state.connected)
+      return state.lastError ?? 'Não foi possível alcançar o computador servidor';
+    return state.remoteUrl === null
+      ? 'Conectado ao servidor GTRZ'
+      : `Servidor: ${state.remoteUrl}`;
   }
   return 'Dados armazenados exclusivamente neste computador';
 }
