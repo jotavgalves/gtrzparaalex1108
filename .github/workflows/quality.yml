@@ -34,21 +34,13 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Bloquear vulnerabilidades altas ou críticas
-        continue-on-error: true
         run: npm audit --audit-level=high
 
       - name: Reconstruir dependências nativas do Electron
         run: npx electron-builder install-app-deps
 
       - name: Validar qualidade
-        run: |
-          npx prettier --check apps/desktop/src/preload/combo-api.ts apps/desktop/src/preload/event-close-api.ts apps/desktop/src/preload/finance-api.ts apps/desktop/src/preload/index.ts apps/desktop/src/preload/insights-api.ts apps/desktop/src/preload/inventory-api.ts apps/desktop/src/preload/operations-api.ts apps/desktop/src/preload/printing-api.ts apps/desktop/src/preload/ticket-api.ts apps/desktop/src/preload/transport.ts apps/desktop/src/preload/voucher-api.ts scripts/check-architecture.mjs
-          npm run typecheck
-          npm run lint
-          npm run architecture:check
-          npm run cycles:check
-          npm run deadcode:check
-          npm run test
+        run: npm run quality
 
       - name: Gerar build
         run: npm run build --workspace @gtrz/desktop
