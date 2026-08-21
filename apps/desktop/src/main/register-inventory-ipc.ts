@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   createCategoryInputSchema,
   createProductInputSchema,
@@ -31,33 +29,22 @@ import {
   previewProductDeletion,
 } from '@gtrz/database/product-administration';
 
+import type { GtrzRequestRouter } from './request-router';
+
 interface RegisterInventoryIpcOptions {
   readonly getDatabase: () => DatabaseContext;
+  readonly router: GtrzRequestRouter;
 }
 
-const INVENTORY_CHANNELS = [
-  IPC_CHANNELS.inventoryGetState,
-  IPC_CHANNELS.inventoryCreateCategory,
-  IPC_CHANNELS.inventoryCreateProduct,
-  IPC_CHANNELS.inventoryUpdateProduct,
-  IPC_CHANNELS.inventoryRecordMovement,
-  IPC_CHANNELS.inventoryListTransfers,
-  IPC_CHANNELS.inventoryTransferStock,
-  IPC_CHANNELS.inventoryPreviewProductDeletion,
-  IPC_CHANNELS.inventoryDeleteProduct,
-] as const;
-
 export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOptions): void {
-  for (const channel of INVENTORY_CHANNELS) ipcMain.removeHandler(channel);
-
-  ipcMain.handle(IPC_CHANNELS.inventoryGetState, () => {
+  options.router.register(IPC_CHANNELS.inventoryGetState, () => {
     return inventoryStateSchema.parse(getInventoryState(options.getDatabase()));
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryCreateCategory, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryCreateCategory, (payload: unknown) => {
     const input = createCategoryInputSchema.parse(payload);
     return productCategorySchema.parse(createProductCategory(options.getDatabase(), input.name));
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryCreateProduct, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryCreateProduct, (payload: unknown) => {
     const input = createProductInputSchema.parse(payload);
     const productInput = {
       categoryId: input.categoryId,
@@ -79,7 +66,7 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
       createInventoryProduct(options.getDatabase(), productInput),
     );
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryUpdateProduct, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryUpdateProduct, (payload: unknown) => {
     const input = updateProductInputSchema.parse(payload);
     const productInput = {
       productId: input.productId,
@@ -103,7 +90,7 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
       updateInventoryProduct(options.getDatabase(), productInput),
     );
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryRecordMovement, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryRecordMovement, (payload: unknown) => {
     const input = recordStockMovementInputSchema.parse(payload);
     const movementInput =
       input.note === undefined
@@ -120,10 +107,10 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
           };
     return inventoryProductSchema.parse(recordStockMovement(options.getDatabase(), movementInput));
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryListTransfers, () => {
+  options.router.register(IPC_CHANNELS.inventoryListTransfers, () => {
     return stockTransferListSchema.parse(listStockTransfers(options.getDatabase()));
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryTransferStock, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryTransferStock, (payload: unknown) => {
     const input = transferStockInputSchema.parse(payload);
     const transferInput =
       input.note === undefined
@@ -144,12 +131,12 @@ export function registerInventoryIpcHandlers(options: RegisterInventoryIpcOption
       transferStockBetweenEvents(options.getDatabase(), transferInput),
     );
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryPreviewProductDeletion, (_event, productId: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryPreviewProductDeletion, (productId: unknown) => {
     return productDeletionImpactSchema.parse(
       previewProductDeletion(options.getDatabase(), String(productId)),
     );
   });
-  ipcMain.handle(IPC_CHANNELS.inventoryDeleteProduct, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.inventoryDeleteProduct, (payload: unknown) => {
     const input = deleteProductInputSchema.parse(payload);
     return productDeletionResultSchema.parse(deleteInventoryProduct(options.getDatabase(), input));
   });
