@@ -79,10 +79,7 @@ const api: GtrzDesktopApi = {
     },
     async changeStatus(input: ChangeEventStatusInput): Promise<GtrzEvent> {
       const parsedInput = changeEventStatusInputSchema.parse(input);
-      const payload: unknown = await invoke(
-        IPC_CHANNELS.eventsChangeStatus,
-        parsedInput,
-      );
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsChangeStatus, parsedInput);
       return eventSchema.parse(payload);
     },
     async delete(input: DeleteEventInput): Promise<EventDeletionResult> {
@@ -104,10 +101,7 @@ const api: GtrzDesktopApi = {
     },
     async switchProfile(input: SwitchProfileInput): Promise<SessionState> {
       const parsedInput = switchProfileInputSchema.parse(input);
-      const payload: unknown = await invoke(
-        IPC_CHANNELS.sessionSwitchProfile,
-        parsedInput,
-      );
+      const payload: unknown = await invoke(IPC_CHANNELS.sessionSwitchProfile, parsedInput);
       return sessionStateSchema.parse(payload);
     },
   },
