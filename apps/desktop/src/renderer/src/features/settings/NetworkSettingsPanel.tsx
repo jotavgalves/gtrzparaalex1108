@@ -133,7 +133,9 @@ export function NetworkSettingsPanel(): React.JSX.Element {
           <span>Conectar este computador a um servidor</span>
           <input
             disabled={submitting}
-            onChange={(inputEvent) => setHost(inputEvent.target.value)}
+            onChange={(inputEvent) => {
+              setHost(inputEvent.target.value);
+            }}
             placeholder="Ex.: 192.168.137.1 ou http://192.168.137.1:3747"
             required
             type="text"
