@@ -11,14 +11,19 @@ let temporaryDirectory: string | null = null;
 const services: NetworkService[] = [];
 
 function createRouter(
-  handler: (channel: string, payload?: unknown) => Promise<unknown> | unknown,
+  handler: (channel: string, payload?: unknown) => unknown,
 ): GtrzRequestRouter {
   return {
-    register(): void {},
-    async dispatch(channel: string, payload?: unknown): Promise<unknown> {
-      return handler(channel, payload);
+    register(channel, requestHandler): void {
+      void channel;
+      void requestHandler;
     },
-    setRendererDispatcher(): void {},
+    dispatch(channel: string, payload?: unknown): Promise<unknown> {
+      return Promise.resolve(handler(channel, payload));
+    },
+    setRendererDispatcher(dispatcher): void {
+      void dispatcher;
+    },
   };
 }
 
