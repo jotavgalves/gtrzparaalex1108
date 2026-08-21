@@ -5,7 +5,8 @@ import type { NetworkState } from '@gtrz/contracts';
 
 function modeLabel(state: NetworkState): string {
   if (state.mode === 'host') return 'Servidor';
-  if (state.mode === 'client') return state.connected ? 'Cliente conectado' : 'Cliente desconectado';
+  if (state.mode === 'client')
+    return state.connected ? 'Cliente conectado' : 'Cliente desconectado';
   return 'Somente este computador';
 }
 
@@ -48,7 +49,9 @@ export function NetworkSettingsPanel(): React.JSX.Element {
       if (nextState.remoteUrl !== null) setHost(nextState.remoteUrl);
       setMessage(success);
     } catch (actionError: unknown) {
-      setError(actionError instanceof Error ? actionError.message : 'Não foi possível alterar a rede.');
+      setError(
+        actionError instanceof Error ? actionError.message : 'Não foi possível alterar a rede.',
+      );
     } finally {
       setSubmitting(false);
     }
