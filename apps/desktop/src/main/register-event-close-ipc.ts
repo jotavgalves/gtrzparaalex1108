@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   completeEventCloseInputSchema,
   eventClosePreviewInputSchema,
@@ -16,22 +14,21 @@ import {
 } from '@gtrz/database';
 
 import type { BackupService } from './backup-service';
+import type { GtrzRequestRouter } from './request-router';
 
 interface RegisterEventCloseIpcOptions {
   readonly getDatabase: () => DatabaseContext;
   readonly backupService: BackupService;
+  readonly router: GtrzRequestRouter;
 }
 
 export function registerEventCloseIpcHandlers(options: RegisterEventCloseIpcOptions): void {
-  ipcMain.removeHandler(IPC_CHANNELS.eventClosePreview);
-  ipcMain.removeHandler(IPC_CHANNELS.eventCloseComplete);
-
-  ipcMain.handle(IPC_CHANNELS.eventClosePreview, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.eventClosePreview, (payload: unknown) => {
     const input = eventClosePreviewInputSchema.parse(payload);
     return eventCloseSummarySchema.parse(previewEventClose(options.getDatabase(), input.eventId));
   });
 
-  ipcMain.handle(IPC_CHANNELS.eventCloseComplete, async (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.eventCloseComplete, async (payload: unknown) => {
     const input = completeEventCloseInputSchema.parse(payload);
     const database = options.getDatabase();
     const initial = previewEventClose(database, input.eventId);
