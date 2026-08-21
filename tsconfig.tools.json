@@ -14,7 +14,9 @@
     "playwright.config.ts",
     "tests/**/*.ts",
     "packages/**/*.spec.ts",
-    "apps/desktop/src/main/database-runtime.ts"
+    "apps/desktop/src/main/database-runtime.ts",
+    "apps/desktop/src/main/network-service.ts",
+    "apps/desktop/src/main/request-router.ts"
   ],
   "references": [
     { "path": "./packages/contracts/tsconfig.json" },

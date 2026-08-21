@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   comboListSchema,
   comboSchema,
@@ -9,31 +7,24 @@ import {
 } from '@gtrz/contracts';
 import { createCombo, listCombos, updateCombo, type DatabaseContext } from '@gtrz/database';
 
+import type { GtrzRequestRouter } from './request-router';
+
 interface RegisterComboIpcOptions {
   readonly getDatabase: () => DatabaseContext;
+  readonly router: GtrzRequestRouter;
 }
 
-const COMBO_CHANNELS = [
-  IPC_CHANNELS.combosList,
-  IPC_CHANNELS.combosCreate,
-  IPC_CHANNELS.combosUpdate,
-] as const;
-
 export function registerComboIpcHandlers(options: RegisterComboIpcOptions): void {
-  for (const channel of COMBO_CHANNELS) {
-    ipcMain.removeHandler(channel);
-  }
-
-  ipcMain.handle(IPC_CHANNELS.combosList, () => {
+  options.router.register(IPC_CHANNELS.combosList, () => {
     return comboListSchema.parse(listCombos(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.combosCreate, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.combosCreate, (payload: unknown) => {
     const input = createComboInputSchema.parse(payload);
     return comboSchema.parse(createCombo(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.combosUpdate, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.combosUpdate, (payload: unknown) => {
     const input = updateComboInputSchema.parse(payload);
     return comboSchema.parse(updateCombo(options.getDatabase(), input));
   });

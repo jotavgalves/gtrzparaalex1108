@@ -4,10 +4,13 @@ import path from 'node:path';
 import { BackupService } from './backup-service';
 import { createMainWindow } from './create-main-window';
 import { DatabaseRuntime } from './database-runtime';
+import { NetworkService } from './network-service';
 import { registerIpcHandlers } from './register-ipc';
+import { registerNetworkIpcHandlers } from './register-network-ipc';
 
 let mainWindow: BrowserWindow | null = null;
 let databaseRuntime: DatabaseRuntime | null = null;
+let networkService: NetworkService | null = null;
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -46,11 +49,20 @@ if (!hasSingleInstanceLock) {
         databaseRuntime,
       });
 
-      registerIpcHandlers({
+      const router = registerIpcHandlers({
         getDatabase: () => requireDatabaseRuntime().get(),
         databaseReady: () => requireDatabaseRuntime().isReady(),
         backupService,
       });
+
+      networkService = new NetworkService({
+        appVersion: app.getVersion(),
+        settingsPath: path.join(userDataPath, 'network-settings.json'),
+        router,
+      });
+      router.setRendererDispatcher(networkService.invokeFromRenderer);
+      registerNetworkIpcHandlers({ networkService, router });
+      await networkService.initialize();
 
       await backupService.createBackup('automatic').catch(() => undefined);
       mainWindow = createMainWindow();
@@ -69,6 +81,8 @@ if (!hasSingleInstanceLock) {
   });
 
   app.on('before-quit', () => {
+    void networkService?.close();
+    networkService = null;
     databaseRuntime?.close();
     databaseRuntime = null;
   });

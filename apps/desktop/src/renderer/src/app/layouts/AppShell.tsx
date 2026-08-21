@@ -1,8 +1,8 @@
-import { Database, Shield, WifiOff } from 'lucide-react';
+import { Database, Server, Shield, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
-import type { SystemInfo } from '@gtrz/contracts';
+import type { NetworkState, SystemInfo } from '@gtrz/contracts';
 
 import gtrzLockup from '../../assets/brand/gtrz-lockup.svg';
 import { navigationModules } from '../../shared/navigation/modules';
@@ -21,9 +21,29 @@ function formatEventDate(timestamp: number): string {
   }).format(timestamp);
 }
 
+function networkHeading(state: NetworkState | null): string {
+  if (state?.mode === 'host') return 'Servidor GTRZ';
+  if (state?.mode === 'client')
+    return state.connected ? 'Cliente GTRZ conectado' : 'Cliente desconectado';
+  return 'Operação local';
+}
+
+function networkDescription(state: NetworkState | null): string {
+  if (state?.mode === 'host') {
+    return state.hostAddresses[0] ?? 'Compartilhando o banco deste computador na rede local';
+  }
+  if (state?.mode === 'client') {
+    if (!state.connected)
+      return state.lastError ?? 'Não foi possível alcançar o computador servidor';
+    return state.remoteUrl === null ? 'Conectado ao servidor GTRZ' : `Servidor: ${state.remoteUrl}`;
+  }
+  return 'Dados armazenados exclusivamente neste computador';
+}
+
 export function AppShell(): React.JSX.Element {
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
+  const [networkState, setNetworkState] = useState<NetworkState | null>(null);
   const { state: sessionState, loading: sessionLoading, error: sessionError } = useSession();
   const activeProfile = sessionState?.profile ?? 'production';
   const activeEvent = sessionState?.activeEvent ?? null;
@@ -50,10 +70,42 @@ export function AppShell(): React.JSX.Element {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function refreshNetwork(): Promise<void> {
+      try {
+        const state = await window.gtrz.network.getState();
+        if (mounted) setNetworkState(state);
+      } catch {
+        // A sessão e as operações exibem os erros de conexão relevantes ao usuário.
+      }
+    }
+
+    void refreshNetwork();
+    const interval = window.setInterval(() => void refreshNetwork(), 3000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
   const visibleModules = useMemo(
     () => navigationModules.filter((module) => module.profiles.includes(activeProfile)),
     [activeProfile],
   );
+
+  const networkHealthy =
+    networkState?.mode === 'host' ||
+    networkState?.mode === 'local' ||
+    (networkState?.mode === 'client' && networkState.connected);
+  const NetworkIcon =
+    networkState?.mode === 'host'
+      ? Server
+      : networkState?.mode === 'client' && networkState.connected
+        ? Wifi
+        : WifiOff;
 
   return (
     <div className="app-shell">
@@ -110,18 +162,31 @@ export function AppShell(): React.JSX.Element {
       <div className="workspace">
         <header className="topbar">
           <div>
-            <strong>Operação local</strong>
+            <strong>{networkHeading(networkState)}</strong>
             <span>
               {sessionLoading
-                ? 'Carregando sessão local'
-                : (sessionError ?? 'Dados armazenados exclusivamente neste computador')}
+                ? 'Carregando sessão'
+                : (sessionError ?? networkDescription(networkState))}
             </span>
           </div>
 
           <div className="topbar-status" aria-live="polite">
-            <span className="status-pill">
-              <WifiOff size={16} aria-hidden="true" />
-              Offline
+            <span
+              className={
+                networkHealthy
+                  ? 'status-pill status-pill--success'
+                  : 'status-pill status-pill--pending'
+              }
+              title={networkState?.lastError ?? undefined}
+            >
+              <NetworkIcon size={16} aria-hidden="true" />
+              {networkState?.mode === 'host'
+                ? 'Servidor'
+                : networkState?.mode === 'client'
+                  ? networkState.connected
+                    ? 'Conectado'
+                    : 'Sem servidor'
+                  : 'Local'}
             </span>
             <span
               className={
@@ -135,7 +200,9 @@ export function AppShell(): React.JSX.Element {
               {systemError !== null
                 ? 'Banco indisponível'
                 : systemInfo?.databaseReady === true
-                  ? 'Banco íntegro'
+                  ? networkState?.mode === 'client'
+                    ? 'Banco local reserva'
+                    : 'Banco íntegro'
                   : 'Verificando banco'}
             </span>
           </div>
