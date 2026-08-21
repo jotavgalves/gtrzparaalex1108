@@ -6,8 +6,8 @@ export const networkStateSchema = z.object({
   mode: networkModeSchema,
   connected: z.boolean(),
   port: z.number().int().min(1).max(65_535),
-  remoteUrl: z.string().url().nullable(),
-  hostAddresses: z.array(z.string().url()),
+  remoteUrl: z.url().nullable(),
+  hostAddresses: z.array(z.url()),
   lastError: z.string().nullable(),
 });
 
