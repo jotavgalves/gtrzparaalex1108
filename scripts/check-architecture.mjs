@@ -106,10 +106,7 @@ for (const file of files) {
   }
 
   if (isPreload && !isPreloadTransport && /\bipcRenderer\b/u.test(content)) {
-    report(
-      file,
-      'preload não pode acessar ipcRenderer diretamente; use a fronteira transport.ts.',
-    );
+    report(file, 'preload não pode acessar ipcRenderer diretamente; use a fronteira transport.ts.');
   }
 
   if (/\b(?:Old|Legacy|Copy|V2)(?:[A-Z_]|\b)/u.test(path.basename(file))) {
