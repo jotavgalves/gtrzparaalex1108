@@ -65,6 +65,8 @@ for (const file of files) {
   const lines = content.split(/\r?\n/u).length;
   const isRenderer = filePath.startsWith('apps/desktop/src/renderer/');
   const isRendererEntry = filePath.endsWith('/renderer/src/main.tsx');
+  const isPreload = filePath.startsWith('apps/desktop/src/preload/');
+  const isPreloadTransport = filePath === 'apps/desktop/src/preload/transport.ts';
   const isFeature = filePath.includes('/features/');
 
   createRootCount += matches(content, /\bcreateRoot\s*\(/gu);
@@ -101,6 +103,13 @@ for (const file of files) {
     )
   ) {
     report(file, 'o renderer importou infraestrutura proibida.');
+  }
+
+  if (isPreload && !isPreloadTransport && /\bipcRenderer\b/u.test(content)) {
+    report(
+      file,
+      'preload não pode acessar ipcRenderer diretamente; use a fronteira transport.ts.',
+    );
   }
 
   if (/\b(?:Old|Legacy|Copy|V2)(?:[A-Z_]|\b)/u.test(path.basename(file))) {
