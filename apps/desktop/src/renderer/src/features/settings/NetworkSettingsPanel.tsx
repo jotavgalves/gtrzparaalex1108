@@ -165,8 +165,8 @@ export function NetworkSettingsPanel(): React.JSX.Element {
       </div>
 
       <small>
-        Nesta etapa, o evento e o perfil ativo são compartilhados entre os terminais e a impressão de
-        vendas feitas pelo cliente ocorre no computador servidor.
+        Nesta etapa, o evento e o perfil ativo são compartilhados entre os terminais e a impressão
+        de vendas feitas pelo cliente ocorre no computador servidor.
       </small>
 
       {error === null ? null : <p className="form-error">{error}</p>}
