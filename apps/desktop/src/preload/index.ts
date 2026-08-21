@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge } from 'electron';
 
 import {
   backupRecordSchema,
@@ -50,12 +50,13 @@ import { inventoryApi } from './inventory-api';
 import { operationsApi } from './operations-api';
 import { printingApi } from './printing-api';
 import { ticketApi } from './ticket-api';
+import { invoke } from './transport';
 import { voucherApi } from './voucher-api';
 
 const api: GtrzDesktopApi = {
   system: {
     async getInfo(): Promise<SystemInfo> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.systemGetInfo);
+      const payload: unknown = await invoke(IPC_CHANNELS.systemGetInfo);
       return systemInfoSchema.parse(payload);
     },
   },
@@ -63,71 +64,65 @@ const api: GtrzDesktopApi = {
   audit: auditApi,
   events: {
     async list(): Promise<readonly GtrzEvent[]> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsList);
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsList);
       return eventListSchema.parse(payload);
     },
     async create(input: CreateEventInput): Promise<GtrzEvent> {
       const parsedInput = createEventInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsCreate, parsedInput);
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsCreate, parsedInput);
       return eventSchema.parse(payload);
     },
     async rename(input: RenameEventInput): Promise<GtrzEvent> {
       const parsedInput = renameEventInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsRename, parsedInput);
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsRename, parsedInput);
       return eventSchema.parse(payload);
     },
     async changeStatus(input: ChangeEventStatusInput): Promise<GtrzEvent> {
       const parsedInput = changeEventStatusInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(
-        IPC_CHANNELS.eventsChangeStatus,
-        parsedInput,
-      );
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsChangeStatus, parsedInput);
       return eventSchema.parse(payload);
     },
     async delete(input: DeleteEventInput): Promise<EventDeletionResult> {
       const parsedInput = deleteEventInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsDelete, parsedInput);
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsDelete, parsedInput);
       return eventDeletionResultSchema.parse(payload);
     },
     async setActive(input: SetActiveEventInput): Promise<SessionState> {
       const parsedInput = setActiveEventInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.eventsSetActive, parsedInput);
+      const payload: unknown = await invoke(IPC_CHANNELS.eventsSetActive, parsedInput);
       return sessionStateSchema.parse(payload);
     },
   },
   eventClose: eventCloseApi,
   session: {
     async getState(): Promise<SessionState> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.sessionGetState);
+      const payload: unknown = await invoke(IPC_CHANNELS.sessionGetState);
       return sessionStateSchema.parse(payload);
     },
     async switchProfile(input: SwitchProfileInput): Promise<SessionState> {
       const parsedInput = switchProfileInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(
-        IPC_CHANNELS.sessionSwitchProfile,
-        parsedInput,
-      );
+      const payload: unknown = await invoke(IPC_CHANNELS.sessionSwitchProfile, parsedInput);
       return sessionStateSchema.parse(payload);
     },
   },
   settings: {
     async changeProductionPassword(input: ChangeProductionPasswordInput): Promise<OperationResult> {
       const parsedInput = changeProductionPasswordInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(
+      const payload: unknown = await invoke(
         IPC_CHANNELS.settingsChangeProductionPassword,
         parsedInput,
       );
       return operationResultSchema.parse(payload);
     },
     async getPaymentTerminal(): Promise<PaymentTerminalSettings> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.settingsGetPaymentTerminal);
+      const payload: unknown = await invoke(IPC_CHANNELS.settingsGetPaymentTerminal);
       return paymentTerminalSettingsSchema.parse(payload);
     },
     async updatePaymentTerminal(
       input: UpdatePaymentTerminalSettingsInput,
     ): Promise<PaymentTerminalSettings> {
       const parsedInput = updatePaymentTerminalSettingsInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(
+      const payload: unknown = await invoke(
         IPC_CHANNELS.settingsUpdatePaymentTerminal,
         parsedInput,
       );
@@ -137,24 +132,24 @@ const api: GtrzDesktopApi = {
   printing: printingApi,
   backups: {
     async getState(): Promise<BackupState> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsGetState);
+      const payload: unknown = await invoke(IPC_CHANNELS.backupsGetState);
       return backupStateSchema.parse(payload);
     },
     async chooseDestination(): Promise<BackupState> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsChooseDestination);
+      const payload: unknown = await invoke(IPC_CHANNELS.backupsChooseDestination);
       return backupStateSchema.parse(payload);
     },
     async createManual(): Promise<BackupRecord> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsCreateManual);
+      const payload: unknown = await invoke(IPC_CHANNELS.backupsCreateManual);
       return backupRecordSchema.parse(payload);
     },
     async importBackup(): Promise<RestoreBackupResult> {
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsImport);
+      const payload: unknown = await invoke(IPC_CHANNELS.backupsImport);
       return restoreBackupResultSchema.parse(payload);
     },
     async verify(input: VerifyBackupInput): Promise<BackupRecord> {
       const parsedInput = verifyBackupInputSchema.parse(input);
-      const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.backupsVerify, parsedInput);
+      const payload: unknown = await invoke(IPC_CHANNELS.backupsVerify, parsedInput);
       return backupRecordSchema.parse(payload);
     },
   },

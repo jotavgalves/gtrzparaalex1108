@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   auditQueryInputSchema,
   auditStateSchema,
@@ -9,22 +7,19 @@ import {
 import { getAuditState, type DatabaseAuditQuery, type DatabaseContext } from '@gtrz/database';
 import { getDashboardStateWithTerminal } from '@gtrz/database/dashboard-terminal';
 
+import type { GtrzRequestRouter } from './request-router';
+
 interface RegisterInsightsIpcOptions {
   readonly getDatabase: () => DatabaseContext;
+  readonly router: GtrzRequestRouter;
 }
 
-const INSIGHT_CHANNELS = [IPC_CHANNELS.dashboardGetState, IPC_CHANNELS.auditList] as const;
-
 export function registerInsightsIpcHandlers(options: RegisterInsightsIpcOptions): void {
-  for (const channel of INSIGHT_CHANNELS) {
-    ipcMain.removeHandler(channel);
-  }
-
-  ipcMain.handle(IPC_CHANNELS.dashboardGetState, () => {
+  options.router.register(IPC_CHANNELS.dashboardGetState, () => {
     return dashboardStateSchema.parse(getDashboardStateWithTerminal(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.auditList, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.auditList, (payload: unknown) => {
     const input = auditQueryInputSchema.parse(payload ?? {});
     const databaseInput: DatabaseAuditQuery = {
       limit: input.limit,

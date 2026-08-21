@@ -1,5 +1,3 @@
-import { ipcRenderer } from 'electron';
-
 import {
   IPC_CHANNELS,
   printerListSchema,
@@ -15,32 +13,28 @@ import {
   type UpdatePrintingSettingsInput,
 } from '@gtrz/contracts';
 
+import { invoke } from './transport';
+
 export const printingApi: PrintingApi = {
   async listPrinters(): Promise<readonly PrinterInfo[]> {
-    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.printingListPrinters);
+    const payload: unknown = await invoke(IPC_CHANNELS.printingListPrinters);
     return printerListSchema.parse(payload);
   },
 
   async getSettings(): Promise<PrintingSettings> {
-    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.printingGetSettings);
+    const payload: unknown = await invoke(IPC_CHANNELS.printingGetSettings);
     return printingSettingsSchema.parse(payload);
   },
 
   async updateSettings(input: UpdatePrintingSettingsInput): Promise<PrintingSettings> {
     const parsedInput = updatePrintingSettingsInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
-      IPC_CHANNELS.printingUpdateSettings,
-      parsedInput,
-    );
+    const payload: unknown = await invoke(IPC_CHANNELS.printingUpdateSettings, parsedInput);
     return printingSettingsSchema.parse(payload);
   },
 
   async reprintOrder(input: PrintOrderInput): Promise<PrintOrderResult> {
     const parsedInput = printOrderInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
-      IPC_CHANNELS.printingReprintOrder,
-      parsedInput,
-    );
+    const payload: unknown = await invoke(IPC_CHANNELS.printingReprintOrder, parsedInput);
     return printOrderResultSchema.parse(payload);
   },
 };
