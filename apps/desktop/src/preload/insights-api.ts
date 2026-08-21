@@ -1,5 +1,3 @@
-import { ipcRenderer } from 'electron';
-
 import {
   auditQueryInputSchema,
   auditStateSchema,
@@ -9,9 +7,11 @@ import {
   type DashboardApi,
 } from '@gtrz/contracts';
 
+import { invoke } from './transport';
+
 export const dashboardApi: DashboardApi = {
   async getState() {
-    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.dashboardGetState);
+    const payload: unknown = await invoke(IPC_CHANNELS.dashboardGetState);
     return dashboardStateSchema.parse(payload);
   },
 };
@@ -19,7 +19,7 @@ export const dashboardApi: DashboardApi = {
 export const auditApi: AuditApi = {
   async list(input = { limit: 100 }) {
     const parsedInput = auditQueryInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.auditList, parsedInput);
+    const payload: unknown = await invoke(IPC_CHANNELS.auditList, parsedInput);
     return auditStateSchema.parse(payload);
   },
 };
