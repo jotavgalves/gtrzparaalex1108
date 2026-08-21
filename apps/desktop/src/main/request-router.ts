@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-export type GtrzRequestHandler = (payload: unknown) => unknown;
+type GtrzRequestHandler = (payload: unknown) => unknown;
 
 export interface GtrzRequestRouter {
   register(channel: string, handler: GtrzRequestHandler): void;
