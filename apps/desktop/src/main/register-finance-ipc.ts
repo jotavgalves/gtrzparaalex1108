@@ -1,5 +1,3 @@
-import { ipcMain } from 'electron';
-
 import {
   cancelExpenseInputSchema,
   cashStateSchema,
@@ -29,38 +27,24 @@ import {
   type DatabaseContext,
 } from '@gtrz/database';
 
+import type { GtrzRequestRouter } from './request-router';
+
 interface RegisterFinanceIpcOptions {
   readonly getDatabase: () => DatabaseContext;
+  readonly router: GtrzRequestRouter;
 }
 
-const FINANCE_CHANNELS = [
-  IPC_CHANNELS.cashGetState,
-  IPC_CHANNELS.cashOpen,
-  IPC_CHANNELS.cashRecordMovement,
-  IPC_CHANNELS.cashClose,
-  IPC_CHANNELS.expensesGetState,
-  IPC_CHANNELS.expensesCreate,
-  IPC_CHANNELS.expensesUpdate,
-  IPC_CHANNELS.expensesUpdatePaymentStatus,
-  IPC_CHANNELS.expensesCancel,
-  IPC_CHANNELS.expensesDelete,
-] as const;
-
 export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): void {
-  for (const channel of FINANCE_CHANNELS) {
-    ipcMain.removeHandler(channel);
-  }
-
-  ipcMain.handle(IPC_CHANNELS.cashGetState, () => {
+  options.router.register(IPC_CHANNELS.cashGetState, () => {
     return cashStateSchema.parse(getCashState(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.cashOpen, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.cashOpen, (payload: unknown) => {
     const input = openCashRegisterInputSchema.parse(payload);
     return cashStateSchema.parse(openCashRegister(options.getDatabase(), input.openingCashCents));
   });
 
-  ipcMain.handle(IPC_CHANNELS.cashRecordMovement, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.cashRecordMovement, (payload: unknown) => {
     const input = recordCashMovementInputSchema.parse(payload);
     const databaseInput =
       input.note === undefined
@@ -69,16 +53,16 @@ export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): 
     return cashStateSchema.parse(recordCashMovement(options.getDatabase(), databaseInput));
   });
 
-  ipcMain.handle(IPC_CHANNELS.cashClose, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.cashClose, (payload: unknown) => {
     const input = closeCashRegisterInputSchema.parse(payload);
     return cashStateSchema.parse(closeCashRegister(options.getDatabase(), input.countedCashCents));
   });
 
-  ipcMain.handle(IPC_CHANNELS.expensesGetState, () => {
+  options.router.register(IPC_CHANNELS.expensesGetState, () => {
     return expenseStateSchema.parse(getExpenseState(options.getDatabase()));
   });
 
-  ipcMain.handle(IPC_CHANNELS.expensesCreate, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.expensesCreate, (payload: unknown) => {
     const input = createExpenseInputSchema.parse(payload);
     return expenseSchema.parse(
       createExpense(options.getDatabase(), {
@@ -92,7 +76,7 @@ export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): 
     );
   });
 
-  ipcMain.handle(IPC_CHANNELS.expensesUpdate, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.expensesUpdate, (payload: unknown) => {
     const input = updateExpenseInputSchema.parse(payload);
     return expenseSchema.parse(
       updateExpense(options.getDatabase(), {
@@ -107,17 +91,17 @@ export function registerFinanceIpcHandlers(options: RegisterFinanceIpcOptions): 
     );
   });
 
-  ipcMain.handle(IPC_CHANNELS.expensesUpdatePaymentStatus, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.expensesUpdatePaymentStatus, (payload: unknown) => {
     const input = updateExpensePaymentStatusInputSchema.parse(payload);
     return expenseSchema.parse(updateExpensePaymentStatus(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.expensesCancel, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.expensesCancel, (payload: unknown) => {
     const input = cancelExpenseInputSchema.parse(payload);
     return expenseSchema.parse(cancelExpense(options.getDatabase(), input));
   });
 
-  ipcMain.handle(IPC_CHANNELS.expensesDelete, (_event, payload: unknown) => {
+  options.router.register(IPC_CHANNELS.expensesDelete, (payload: unknown) => {
     const input = deleteExpenseInputSchema.parse(payload);
     return expenseDeletionResultSchema.parse(deleteExpense(options.getDatabase(), input));
   });
