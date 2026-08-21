@@ -126,7 +126,7 @@ function listHostAddresses(): readonly string[] {
   for (const entries of Object.values(networkInterfaces())) {
     for (const entry of entries ?? []) {
       if (entry.family === 'IPv4' && !entry.internal) {
-        addresses.add(`http://${entry.address}:${NETWORK_PORT}`);
+        addresses.add(`http://${entry.address}:${String(NETWORK_PORT)}`);
       }
     }
   }
@@ -158,7 +158,7 @@ function writeJson(response: ServerResponse, statusCode: number, value: unknown)
 }
 
 async function closeServer(server: Server | null): Promise<void> {
-  if (server === null || !server.listening) return;
+  if (!server?.listening) return;
   await new Promise<void>((resolve, reject) => {
     server.close((error) => {
       if (error === undefined) resolve();
@@ -288,7 +288,7 @@ export class NetworkService {
     } catch (error: unknown) {
       this.lastError = errorMessage(error);
       throw new Error(
-        `Não foi possível iniciar o servidor GTRZ na porta ${NETWORK_PORT}. ${this.lastError}`,
+        `Não foi possível iniciar o servidor GTRZ na porta ${String(NETWORK_PORT)}. ${this.lastError}`,
       );
     }
 
@@ -443,7 +443,9 @@ export class NetworkService {
     const response = await fetch(`${remoteUrl}/health`, {
       signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
     });
-    if (!response.ok) throw new Error(`Servidor respondeu HTTP ${response.status}.`);
+    if (!response.ok) {
+      throw new Error(`Servidor respondeu HTTP ${String(response.status)}.`);
+    }
 
     const parsed = parseJson(await response.text());
     if (!isRecord(parsed) || parsed.protocolVersion !== NETWORK_PROTOCOL_VERSION) {
