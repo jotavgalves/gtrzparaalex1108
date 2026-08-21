@@ -1,5 +1,3 @@
-import { ipcRenderer } from 'electron';
-
 import {
   createCategoryInputSchema,
   createProductInputSchema,
@@ -30,14 +28,16 @@ import {
   type UpdateProductInput,
 } from '@gtrz/contracts';
 
+import { invoke } from './transport';
+
 export const inventoryApi: InventoryApi = {
   async getState(): Promise<InventoryState> {
-    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.inventoryGetState);
+    const payload: unknown = await invoke(IPC_CHANNELS.inventoryGetState);
     return inventoryStateSchema.parse(payload);
   },
   async createCategory(input: CreateCategoryInput): Promise<ProductCategory> {
     const parsedInput = createCategoryInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryCreateCategory,
       parsedInput,
     );
@@ -45,7 +45,7 @@ export const inventoryApi: InventoryApi = {
   },
   async createProduct(input: CreateProductInput): Promise<InventoryProduct> {
     const parsedInput = createProductInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryCreateProduct,
       parsedInput,
     );
@@ -53,7 +53,7 @@ export const inventoryApi: InventoryApi = {
   },
   async updateProduct(input: UpdateProductInput): Promise<InventoryProduct> {
     const parsedInput = updateProductInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryUpdateProduct,
       parsedInput,
     );
@@ -61,26 +61,26 @@ export const inventoryApi: InventoryApi = {
   },
   async recordMovement(input: RecordStockMovementInput): Promise<InventoryProduct> {
     const parsedInput = recordStockMovementInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryRecordMovement,
       parsedInput,
     );
     return inventoryProductSchema.parse(payload);
   },
   async listTransfers(): Promise<readonly StockTransfer[]> {
-    const payload: unknown = await ipcRenderer.invoke(IPC_CHANNELS.inventoryListTransfers);
+    const payload: unknown = await invoke(IPC_CHANNELS.inventoryListTransfers);
     return stockTransferListSchema.parse(payload);
   },
   async transferStock(input: TransferStockInput): Promise<StockTransfer> {
     const parsedInput = transferStockInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryTransferStock,
       parsedInput,
     );
     return stockTransferSchema.parse(payload);
   },
   async previewDeletion(productId: string): Promise<ProductDeletionImpact> {
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryPreviewProductDeletion,
       productId,
     );
@@ -88,7 +88,7 @@ export const inventoryApi: InventoryApi = {
   },
   async deleteProduct(input: DeleteProductInput): Promise<ProductDeletionResult> {
     const parsedInput = deleteProductInputSchema.parse(input);
-    const payload: unknown = await ipcRenderer.invoke(
+    const payload: unknown = await invoke(
       IPC_CHANNELS.inventoryDeleteProduct,
       parsedInput,
     );
