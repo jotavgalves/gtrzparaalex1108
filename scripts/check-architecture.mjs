@@ -67,6 +67,8 @@ for (const file of files) {
   const isRendererEntry = filePath.endsWith('/renderer/src/main.tsx');
   const isPreload = filePath.startsWith('apps/desktop/src/preload/');
   const isPreloadTransport = filePath === 'apps/desktop/src/preload/transport.ts';
+  const isMain = filePath.startsWith('apps/desktop/src/main/');
+  const isMainRequestRouter = filePath === 'apps/desktop/src/main/request-router.ts';
   const isFeature = filePath.includes('/features/');
 
   createRootCount += matches(content, /\bcreateRoot\s*\(/gu);
@@ -107,6 +109,10 @@ for (const file of files) {
 
   if (isPreload && !isPreloadTransport && /\bipcRenderer\b/u.test(content)) {
     report(file, 'preload não pode acessar ipcRenderer diretamente; use a fronteira transport.ts.');
+  }
+
+  if (isMain && !isMainRequestRouter && /\bipcMain\b/u.test(content)) {
+    report(file, 'main não pode acessar ipcMain diretamente; use a fronteira request-router.ts.');
   }
 
   if (/\b(?:Old|Legacy|Copy|V2)(?:[A-Z_]|\b)/u.test(path.basename(file))) {
