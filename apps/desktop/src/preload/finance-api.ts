@@ -75,10 +75,7 @@ export const expenseApi: ExpenseApi = {
 
   async updatePaymentStatus(input: UpdateExpensePaymentStatusInput): Promise<Expense> {
     const parsedInput = updateExpensePaymentStatusInputSchema.parse(input);
-    const payload: unknown = await invoke(
-      IPC_CHANNELS.expensesUpdatePaymentStatus,
-      parsedInput,
-    );
+    const payload: unknown = await invoke(IPC_CHANNELS.expensesUpdatePaymentStatus, parsedInput);
     return expenseSchema.parse(payload);
   },
 
